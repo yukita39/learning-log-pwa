@@ -11,8 +11,8 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 CRED_PATH  = os.getenv("CRED_PATH",  "client_secret.json")
 TOKEN_PATH = os.getenv("TOKEN_PATH", "token.json")  # Render では例: /tmp/token.json
 
-print("DEBUG CRED_PATH =", CRED_PATH)
-print("DEBUG secrets dir =", os.listdir('/etc/secrets'))
+print("DEBUG TOKEN_PATH =", TOKEN_PATH)
+print("DEBUG token exists?", os.path.exists(TOKEN_PATH))
 
 def get_calendar_service():
     creds = None
