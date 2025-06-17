@@ -3,11 +3,13 @@ from datetime import datetime, timedelta
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 CRED_PATH  = os.getenv("CRED_PATH",  "client_secret.json")
 TOKEN_PATH = os.getenv("TOKEN_PATH", "token.json")
+SERVICE_CRED = os.getenv("SERVICE_CRED", "service_account.json")
 
 # --- SecretFile は read-only なので /tmp にコピーして編集可にする ---
 TMP_TOKEN = "/tmp/token.json"
@@ -34,7 +36,7 @@ def get_calendar_service():
     return build("calendar", "v3", credentials=creds)
 
 def add_event(summary, description, start_time, duration_minutes=30):
-    service = get_calendar_service()
+    service = get_calendar_service_sa() 
 
     event = {
         "summary": summary,
@@ -50,3 +52,8 @@ def add_event(summary, description, start_time, duration_minutes=30):
     }
     created = service.events().insert(calendarId="primary", body=event).execute()
     return created.get("htmlLink")
+
+def get_calendar_service_sa():
+    creds = service_account.Credentials.from_service_account_file(
+        SERVICE_CRED, scopes=SCOPES)
+    return build("calendar", "v3", credentials=creds)
