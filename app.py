@@ -1,8 +1,9 @@
 import csv, os
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify  # ← jsonify 追加
 from google_calendar import add_event
-from db import Session, Log                 # ← SQLAlchemy
+from db import Session, Log                                 # ← SQLAlchemy
+from sqlalchemy import text                                 # ランキングSQL用
 
 app = Flask(__name__)
 CSV_FILE = "log_data.csv"
@@ -72,6 +73,29 @@ def index():
     today = datetime.today().strftime("%Y-%m-%d")
     return render_template("index.html", today=today)
 
+@app.route("/tags/suggest")
+def tags_suggest():
+    with Session() as s:
+        rows = s.execute(text("""
+            SELECT TRIM(tag) AS tag, COUNT(*) AS cnt
+            FROM logs, json_each('[' || replace(tags, ',', '","') || ']')
+            GROUP BY tag
+            ORDER BY cnt DESC
+            LIMIT 20
+        """)).fetchall()
+    return jsonify([t for t, _ in rows])
+
+@app.route("/tags/top")
+def tags_top():
+    with Session() as s:
+        rows = s.execute(text("""
+            SELECT TRIM(tag) AS tag, COUNT(*) AS cnt
+            FROM logs, json_each('[' || replace(tags, ',', '","') || ']')
+            GROUP BY tag
+            ORDER BY cnt DESC
+            LIMIT 5
+        """)).fetchall()
+    return render_template("tags_top.html", rows=rows)
 
 # /stats ルートはそのまま（CSV 集計）
 # manifest ルートもそのまま
