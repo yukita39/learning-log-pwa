@@ -1,103 +1,151 @@
+# ----------  app.py  --------------------------------------------
 import csv, os
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify  # ← jsonify 追加
+
+from flask import Flask, render_template, request, jsonify
+from sqlalchemy import text
+from db import Session, Log
 from google_calendar import add_event
-from db import Session, Log                                 # ← SQLAlchemy
-from sqlalchemy import text                                 # ランキングSQL用
 
 app = Flask(__name__)
 CSV_FILE = "log_data.csv"
 
+# ────────────────────────────────────────────────────────────────
+# ルート: ホーム（フォーム表示・ログ登録）
+# ────────────────────────────────────────────────────────────────
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        # ------------------- フォーム値 -------------------
-        date_str   = request.form.get("date")          # 2025-06-21
-        time_str   = request.form.get("start_time")    # 09:00
+        # 1) フォーム値
+        date_str   = request.form.get("date")
+        time_str   = request.form.get("start_time")
         content    = request.form.get("content")
         duration   = int(request.form.get("duration"))
         impression = request.form.get("impression", "")
-        tags_raw   = request.form.get("tags", "")      # "Python,Flask"
+        tags_raw   = request.form.get("tags", "")            # "Python,Flask"
 
-        # ---------- Python 型へ変換 & 補助変数 ----------
-        date_obj        = datetime.strptime(date_str, "%Y-%m-%d").date()
-        start_time_obj  = datetime.strptime(time_str, "%H:%M").time()
-        start_datetime  = datetime.combine(date_obj, start_time_obj)
-        tag_list        = [t.strip() for t in tags_raw.split(",") if t.strip()]
+        date_obj       = datetime.strptime(date_str, "%Y-%m-%d").date()
+        start_time_obj = datetime.strptime(time_str, "%H:%M").time()
+        start_dt       = datetime.combine(date_obj, start_time_obj)
+        tag_list       = [t.strip() for t in tags_raw.split(",") if t.strip()]
 
-        # ---------------- Google カレンダー --------------
-        tag_str = " ".join(f"#{t}" for t in tag_list)   # "#Python #Flask"
-        summary  = f"学習：{content}  {tag_str}".strip()
+        # 2) Google カレンダー
         event_link = add_event(
-            summary=summary,
+            summary=f"学習：{content}  " + " ".join(f"#{t}" for t in tag_list),
             description=impression,
-            start_time=start_datetime,
-            duration_minutes=duration    
+            start_time=start_dt,
+            duration_minutes=duration,
         )
-        print("カレンダーURL:", event_link)
 
-        # ---------------- データベース -------------------
-        with Session() as session:
+        # 3) DB 保存
+        with Session() as s:
             log = Log(
                 date=date_obj,
                 start_time=start_time_obj,
                 duration=duration,
                 content=content,
                 impression=impression,
-                tags=",".join(tag_list),   # DB は文字列で保持
+                tags=",".join(tag_list),
             )
-            session.add(log)
-            session.commit()
+            s.add(log)
+            s.commit()
 
-        # --------------- CSV も併存させる ---------------
+        # 4) CSV 併存（任意）
         with open(CSV_FILE, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow([date_str, time_str, content, duration,
-                             impression, ",".join(tag_list)])
+            csv.writer(f).writerow(
+                [date_str, time_str, content, duration, impression, ",".join(tag_list)]
+            )
 
-        # ---------------- 整形ログ -----------------------
-        formatted_log = f"""👨‍💻 今日のコードログ（#CodeLog）
-
-🧠 今日やったこと：
-- {content}
-
-🏷 タグ：{', '.join(tag_list) or 'なし'}
-⏱ 所要時間：{duration}分
-📅 日付：{date_str}
-📝 一言メモ：{impression}
+        # 5) 表示
+        formatted = f"""👨‍💻 今日のコードログ（#CodeLog）
+🧠 やったこと : {content}
+🏷 タグ       : {', '.join(tag_list) or 'なし'}
+⏱ 時間       : {duration} 分
+📅 日付       : {date_str}
+📝 メモ       : {impression}
 """
 
-        return render_template("result.html", log=formatted_log)
+        return render_template("result.html", log=formatted, link=event_link)
 
-    # —— GET ——
-    today = datetime.today().strftime("%Y-%m-%d")
-    return render_template("index.html", today=today)
+    # GET
+    return render_template("index.html", today=datetime.today().strftime("%Y-%m-%d"))
 
+
+# ────────────────────────────────────────────────────────────────
+# ルート: 統計（CSV ベースのまま）
+# ────────────────────────────────────────────────────────────────
+@app.route("/stats")
+def stats():
+    total_time = 0
+    date_set   = set()
+    date_list  = []
+
+    if os.path.exists(CSV_FILE):
+        with open(CSV_FILE, newline="", encoding="utf-8") as f:
+            for row in csv.reader(f):
+                try:
+                    date_obj = datetime.strptime(row[0], "%Y-%m-%d").date()
+                    date_list.append(date_obj)
+                    date_set.add(date_obj)
+                    total_time += int(row[3])    # duration 列
+                except (ValueError, IndexError):
+                    pass
+
+    continued_days = len(date_set)
+
+    # ストリーク計算
+    streak = 0
+    today  = datetime.today().date()
+    for d in sorted(date_list, reverse=True):
+        if d == today - timedelta(days=streak):
+            streak += 1
+        else:
+            break
+
+    return render_template(
+        "stats.html",
+        total_time=total_time,
+        days=continued_days,
+        streak=streak,
+    )
+
+
+# ────────────────────────────────────────────────────────────────
+# ルート: 人気タグ API（Tagify ホワイトリスト用）
+# ────────────────────────────────────────────────────────────────
 @app.route("/tags/suggest")
 def tags_suggest():
     with Session() as s:
         rows = s.execute(text("""
             SELECT TRIM(tag) AS tag, COUNT(*) AS cnt
             FROM logs, json_each('[' || replace(tags, ',', '","') || ']')
-            GROUP BY tag
-            ORDER BY cnt DESC
-            LIMIT 20
+            GROUP BY tag ORDER BY cnt DESC LIMIT 20
         """)).fetchall()
     return jsonify([t for t, _ in rows])
 
+
+# ────────────────────────────────────────────────────────────────
+# ルート: タグランキング TOP5
+# ────────────────────────────────────────────────────────────────
 @app.route("/tags/top")
 def tags_top():
     with Session() as s:
         rows = s.execute(text("""
             SELECT TRIM(tag) AS tag, COUNT(*) AS cnt
             FROM logs, json_each('[' || replace(tags, ',', '","') || ']')
-            GROUP BY tag
-            ORDER BY cnt DESC
-            LIMIT 5
+            GROUP BY tag ORDER BY cnt DESC LIMIT 5
         """)).fetchall()
     return render_template("tags_top.html", rows=rows)
 
-# /stats ルートはそのまま（CSV 集計）
-# manifest ルートもそのまま
+
+# ────────────────────────────────────────────────────────────────
+# ルート: PWA manifest
+# ────────────────────────────────────────────────────────────────
+@app.route("/manifest.json")
+def manifest():
+    return app.send_static_file("manifest.json")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
+# ----------  app.py  --------------------------------------------
