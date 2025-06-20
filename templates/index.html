@@ -46,6 +46,20 @@
                 <button type="submit" class="btn btn-primary">ログを生成</button>
                 <a href="/stats" class="btn btn-info">📊 統計情報を見る</a>
             </div>
+
+            <!-- Tagify CSS/JS -->
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" />
+            <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+
+            <div class="mb-3">
+            <label class="form-label">タグ (カンマ区切り)</label>
+            <input name="tags" class="form-control" placeholder="Python, Flask" />
+            </div>
+
+            <script>
+            // 入力欄を Tagify 化
+            new Tagify(document.querySelector('input[name="tags"]'));
+            </script>
         </form>
     </div>
 </body>
