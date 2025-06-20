@@ -25,11 +25,13 @@ def index():
         tag_list        = [t.strip() for t in tags_raw.split(",") if t.strip()]
 
         # ---------------- Google カレンダー --------------
+        tag_str = " ".join(f"#{t}" for t in tag_list)   # "#Python #Flask"
+        summary  = f"学習：{content}  {tag_str}".strip()
         event_link = add_event(
-            summary=f"学習：{content}",
+            summary=summary,
             description=impression,
             start_time=start_datetime,
-            duration_minutes=duration,
+            duration_minutes=duration    
         )
         print("カレンダーURL:", event_link)
 
