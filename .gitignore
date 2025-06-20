@@ -7,3 +7,5 @@ __pycache__/
 
 client_secret.json
 token.json
+service_account.json
+共有.py

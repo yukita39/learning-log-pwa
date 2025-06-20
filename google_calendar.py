@@ -10,6 +10,7 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 CRED_PATH  = os.getenv("CRED_PATH",  "client_secret.json")
 TOKEN_PATH = os.getenv("TOKEN_PATH", "token.json")
 SERVICE_CRED = os.getenv("SERVICE_CRED", "service_account.json")
+CALENDAR_ID  = os.getenv("CALENDAR_ID", "primary") 
 
 # --- SecretFile は read-only なので /tmp にコピーして編集可にする ---
 TMP_TOKEN = "/tmp/token.json"
@@ -50,7 +51,7 @@ def add_event(summary, description, start_time, duration_minutes=30):
             "timeZone": "Asia/Tokyo",
         },
     }
-    created = service.events().insert(calendarId="primary", body=event).execute()
+    created = service.events().insert(calendarId=CALENDAR_ID, body=event).execute()
     return created.get("htmlLink")
 
 def get_calendar_service_sa():
