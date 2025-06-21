@@ -1,26 +1,35 @@
-// static/js/tagify-init.js
-document.addEventListener("DOMContentLoaded", () => {
+// static/js/tagify-init.js  (フロントエンド側)
+document.addEventListener("DOMContentLoaded", async () => {
   const input  = document.querySelector('#tags-input');
+  if (!input) {
+    console.error('タグ入力欄 (#tags-input) が見つかりません');
+    return;
+  }
+
+  // Tagify 初期化
   const tagify = new Tagify(input, {
-    // ←★ ここがポイント
-    originalInputValueFormat: valuesArr => valuesArr.map(v => v.value).join(",")
+    // 送信時に "Python,Flask" 形式で格納
+    originalInputValueFormat: v => v.map(item => item.value).join(",")
   });
 
-  // 人気タグを取得してホワイトリスト化
-  fetch('/tags/suggest')
-    .then(r => r.json())
-    .then(list => {
-      tagify.settings.whitelist = list;
+  /* --- 人気タグ（トップ20）を取得しホワイトリストへ --- */
+  try {
+    const res  = await fetch('/tags/suggest');
+    const list = await res.json();           // ["Python","Flask",...]
 
-      // クイックタグボタンを表示（上位5件）
-      const holder = document.getElementById('quick-tags');
-      list.slice(0, 5).forEach(tag => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-outline-secondary me-1 mb-1';
-        btn.textContent = tag;
-        btn.onclick = () => tagify.addTags([tag]);
-        holder.appendChild(btn);
-      });
+    tagify.settings.whitelist = list;
+
+    // クイックタグボタン（上位5件）
+    const holder = document.getElementById('quick-tags');
+    list.slice(0, 5).forEach(tag => {
+      const btn = document.createElement('button');
+      btn.type      = 'button';
+      btn.className = 'btn btn-sm btn-outline-secondary me-1 mb-1';
+      btn.textContent = tag;
+      btn.onclick  = () => tagify.addTags([tag]);
+      holder.appendChild(btn);
     });
+  } catch (err) {
+    console.error('タグ候補の取得に失敗:', err);
+  }
 });
