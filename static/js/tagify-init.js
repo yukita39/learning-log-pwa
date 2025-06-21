@@ -1,27 +1,28 @@
 // static/js/tagify-init.js
 document.addEventListener("DOMContentLoaded", async () => {
-  const input = document.querySelector("#tags-input");
-  if (!input) return;
+  const el = document.querySelector("#tags-input");
+  if (!el) return;
 
-  /***** ① すでに Tagified なら再設定だけ行う *****/
-  let tagify = input.tagify || new Tagify(input);
+  /* ① 既に Tagified なら完全に破棄して作り直す */
+  if (el.tagify) {
+    el.tagify.destroy();        // インスタンス & イベントを完全削除
+  }
 
-  // 強制的に設定を上書き
-  tagify.settings.originalInputValueFormat = v =>
-    v.map(t => t.value).join(",");
+  /* ② 正しい設定で新しく生成 */
+  const tagify = new Tagify(el, {
+    originalInputValueFormat: v => v.map(t => t.value).join(","),  // ← 重要
+    enforceWhitelist: false,
+  });
 
-  // 拡張が enforceWhitelist=true にしている場合に備え false に戻す
-  tagify.settings.enforceWhitelist = false;
-
-  /***** ② 人気タグを取得してホワイトリスト & ボタン作成 *****/
+  /* ③ 人気タグを取得してホワイトリスト & ボタン */
   try {
     const res  = await fetch("/tags/suggest");
-    const list = await res.json();          // ["Python", "Flask", …]
+    const list = await res.json();  // 例 ["Python","Flask",…]
 
     tagify.settings.whitelist = list;
 
     const holder = document.getElementById("quick-tags");
-    holder.innerHTML = "";                  // 二重生成ガード
+    holder.innerHTML = "";          // 二重生成防止
     list.slice(0, 5).forEach(tag => {
       const btn = document.createElement("button");
       btn.type = "button";
