@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, jsonify
 from sqlalchemy import text
 from db import Session, Log
 from google_calendar import add_event
+from collections import Counter
 
 app = Flask(__name__)
 CSV_FILE = "log_data.csv"
@@ -115,13 +116,20 @@ def stats():
 # ────────────────────────────────────────────────────────────────
 @app.route("/tags/suggest")
 def tags_suggest():
+    # SQLite の json_each 依存を廃止：Python 側で分解
     with Session() as s:
-        rows = s.execute(text("""
-            SELECT TRIM(tag) AS tag, COUNT(*) AS cnt
-            FROM logs, json_each('[' || replace(tags, ',', '","') || ']')
-            GROUP BY tag ORDER BY cnt DESC LIMIT 20
-        """)).fetchall()
-    return jsonify([t for t, _ in rows])
+        rows = s.query(Log.tags).filter(Log.tags != "").all()
+
+    from collections import Counter
+    c = Counter(
+        tag.strip()
+        for (csv_tags,) in rows          # rows は [( 'Python,Flask' ,)]
+        for tag in csv_tags.split(",")
+        if tag.strip()
+    )
+    # 上位 20 件を返す
+    suggest = [tag for tag, _ in c.most_common(20)]
+    return jsonify(suggest)
 
 
 # ────────────────────────────────────────────────────────────────
