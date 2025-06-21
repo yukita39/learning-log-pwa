@@ -116,20 +116,18 @@ def stats():
 # ────────────────────────────────────────────────────────────────
 @app.route("/tags/suggest")
 def tags_suggest():
-    # SQLite の json_each 依存を廃止：Python 側で分解
     with Session() as s:
-        rows = s.query(Log.tags).filter(Log.tags != "").all()
+        rows = s.query(Log.tags).filter(Log.tags != None).all()   # rows = [( 'Python,Flask' ,)]
 
-    from collections import Counter
-    c = Counter(
-        tag.strip()
-        for (csv_tags,) in rows          # rows は [( 'Python,Flask' ,)]
-        for tag in csv_tags.split(",")
-        if tag.strip()
-    )
-    # 上位 20 件を返す
-    suggest = [tag for tag, _ in c.most_common(20)]
-    return jsonify(suggest)
+    # None・空文字を除外して集計
+    words = []
+    for (csv_tags,) in rows:
+        if not csv_tags:
+            continue
+        words.extend(t.strip() for t in csv_tags.split(",") if t.strip())
+
+    top20 = [tag for tag, _ in Counter(words).most_common(20)]
+    return jsonify(top20)
 
 
 # ────────────────────────────────────────────────────────────────
@@ -138,12 +136,16 @@ def tags_suggest():
 @app.route("/tags/top")
 def tags_top():
     with Session() as s:
-        rows = s.execute(text("""
-            SELECT TRIM(tag) AS tag, COUNT(*) AS cnt
-            FROM logs, json_each('[' || replace(tags, ',', '","') || ']')
-            GROUP BY tag ORDER BY cnt DESC LIMIT 5
-        """)).fetchall()
-    return render_template("tags_top.html", rows=rows)
+        rows = s.query(Log.tags).filter(Log.tags != None).all()
+
+    words = []
+    for (csv_tags,) in rows:
+        if not csv_tags:
+            continue
+        words.extend(t.strip() for t in csv_tags.split(",") if t.strip())
+
+    top5 = Counter(words).most_common(5)
+    return render_template("tags_top.html", rows=top5)
 
 
 # ────────────────────────────────────────────────────────────────

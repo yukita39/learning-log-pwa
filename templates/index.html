@@ -55,11 +55,6 @@
             <!-- 自前 JS -->
             <script src="{{ url_for('static', filename='js/tagify-init.js') }}"></script>
 
-            <script>
-            // 入力欄を Tagify 化
-            new Tagify(document.querySelector('input[name="tags"]'));
-            </script>
-
             <div class="d-flex gap-2 mt-3">
                 <button type="submit" class="btn btn-primary">ログを生成</button>
                 <a href="/stats" class="btn btn-info">📊 統計情報を見る</a>
