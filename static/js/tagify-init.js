@@ -7,10 +7,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Tagify 初期化
-  const tagify = new Tagify(input, {
-    // 送信時に "Python,Flask" 形式で格納
-    originalInputValueFormat: v => v.map(item => item.value).join(",")
-  });
+const tagify = new Tagify(input, {
+  originalInputValueFormat: v => v.map(t => t.value).join(",")   // ←これ必須
+});
 
   /* --- 人気タグ（トップ20）を取得しホワイトリストへ --- */
   try {
