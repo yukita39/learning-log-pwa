@@ -3,19 +3,19 @@ console.log("▶ tagify-init.js loaded");
 document.addEventListener("DOMContentLoaded", async () => {
   const el = document.querySelector("#tags-input");
   if (!el) return;
-
+console.log("…before destroy/new"); 
   /* --- ① 旧インスタンスがあれば完全破棄 --- */
   if (el.tagify) {
     el.tagify.destroy();   // イベント & DOM クリーンアップ
     delete el.tagify;      // ← これが肝心！
   }
-
+console.log("…before destroy/new"); 
   /* --- ② 正しい設定で再生成 --- */
   const tagify = new Tagify(el, {
     originalInputValueFormat: arr => arr.map(x => x.value).join(","),  // "Python,Flask"
     enforceWhitelist: false,   // 手入力を許可
   });
-
+console.log("…before destroy/new"); 
   /* --- ③ 人気タグ取得 → ホワイトリスト & ボタン --- */
   try {
     const res  = await fetch("/tags/suggest");
