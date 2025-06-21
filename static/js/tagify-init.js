@@ -1,4 +1,5 @@
 //  static/js/tagify-init.js
+console.log("▶ tagify-init.js loaded");
 document.addEventListener("DOMContentLoaded", async () => {
   const el = document.querySelector("#tags-input");
   if (!el) return;
