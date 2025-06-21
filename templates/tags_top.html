@@ -1,13 +1,19 @@
 <!-- templates/tags_top.html -->
 {% block content %}
-<h3 class="mb-3">🏆 よく使うタグ TOP5</h3>
-<ol class="list-group list-group-numbered">
-  {% for tag, cnt in rows %}
-  <li class="list-group-item d-flex justify-content-between align-items-center">
-    {{ tag }}
-    <span class="badge bg-primary rounded-pill">{{ cnt }}</span>
-  </li>
-  {% endfor %}
-</ol>
-<a href="/" class="btn btn-secondary mt-4">戻る</a>
+<body class="container mt-5">
+    <h1 class="mb-4 text-warning">📊 よく使うタグ TOP5</h1>
+
+    <div class="card p-4 shadow-sm">
+        <ol class="list-group list-group-numbered">
+          {% for tag, cnt in rows %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ tag }}
+            <span class="badge bg-primary rounded-pill">{{ cnt }}</span>
+          </li>
+          {% endfor %}
+        </ol>
+    </div>
+
+    <a href="/" class="btn btn-secondary mt-4">← フォームに戻る</a>
+</body>
 {% endblock %}
