@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
 from sqlalchemy import text
 from db import Session, Log
+from sqlalchemy import func
 from google_calendar import add_event
 from collections import Counter
 
@@ -154,6 +155,34 @@ def tags_top():
 @app.route("/manifest.json")
 def manifest():
     return app.send_static_file("manifest.json")
+
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
+@app.route("/stats/data")
+def stats_data():
+    with Session() as s:
+        # 日別累計学習時間
+        daily_q = s.query(
+            Log.date,
+            func.sum(Log.duration).label("total")
+        ).group_by(Log.date).order_by(Log.date).all()
+        daily = [{"date": d.isoformat(), "duration": total} for d, total in daily_q]
+
+        # タグ使用回数（単純カウント）
+        rows = s.query(Log.tags).all()
+        c = Counter()
+        for (csv_tags,) in rows:
+            if csv_tags:
+                for tag in csv_tags.split(','):
+                    t = tag.strip()
+                    if t:
+                        c[t] += 1
+        tag_share = [{"tag": t, "count": cnt} for t, cnt in c.items()]
+
+    return jsonify({"daily": daily, "tag_share": tag_share})
 
 
 if __name__ == "__main__":
