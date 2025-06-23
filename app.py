@@ -1,7 +1,7 @@
 # ----------  app.py  --------------------------------------------
 import csv, os
 from datetime import datetime, timedelta
-
+from db import Base, engine
 from flask import Flask, render_template, request, jsonify
 from sqlalchemy import text
 from db import Session, Log
@@ -11,7 +11,6 @@ from collections import Counter
 
 app = Flask(__name__)
 CSV_FILE = "log_data.csv"
-
 # ────────────────────────────────────────────────────────────────
 # ルート: ホーム（フォーム表示・ログ登録）
 # ────────────────────────────────────────────────────────────────
