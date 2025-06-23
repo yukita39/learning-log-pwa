@@ -1,0 +1,31 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>学習ダッシュボード</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-5">
+  <h1 class="mb-4 text-primary">📊 学習ダッシュボード</h1>
+
+  <div class="row g-4">
+    <div class="col-12 col-md-8">
+      <div class="card shadow-sm p-3">
+        <h5 class="card-title">日別学習時間</h5>
+        <canvas id="chart-daily"></canvas>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm p-3">
+        <h5 class="card-title">タグシェア</h5>
+        <canvas id="chart-tags"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
