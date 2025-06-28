@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 # あなたの MetaData をインポート
-from db import Base
+from db import Base, Log, Users
 
 # Alembic Config オブジェクト
 config = context.config

@@ -1,28 +1,83 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>統計情報</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/service-worker.js')
-                .then(reg => console.log('SW registered', reg))
-                .catch(err => console.error('SW failed', err));
-        }
-    </script>
-</head>
-<body class="container mt-5">
+{% extends "base.html" %}
+
+{% block title %}統計情報 - 学習ログ{% endblock %}
+
+{% block content %}
+<div class="container">
     <h1 class="mb-4 text-warning">📊 学習統計</h1>
 
-    <div class="card p-4 shadow-sm">
-        <ul class="list-group">
-            <li class="list-group-item">📅 継続日数: <strong>{{ days }}</strong> 日</li>
-            <li class="list-group-item">🔥 連続記録日数: <strong>{{ streak }}</strong> 日</li>
-            <li class="list-group-item">⏱ 累計学習時間: <strong>{{ total_time }}</strong> 分</li>
-        </ul>
+    <div class="row">
+        <!-- カード形式で見やすく表示 -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-primary mb-2">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h5 class="card-title">継続日数</h5>
+                    <p class="display-4 fw-bold">{{ days }}</p>
+                    <p class="text-muted">日</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-danger mb-2">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <h5 class="card-title">連続記録日数</h5>
+                    <p class="display-4 fw-bold">{{ streak }}</p>
+                    <p class="text-muted">日</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-1 text-success mb-2">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h5 class="card-title">累計学習時間</h5>
+                    <p class="display-4 fw-bold">{{ total_time }}</p>
+                    <p class="text-muted">分</p>
+                    <p class="text-muted">({{ "%.1f"|format(total_time / 60) }} 時間)</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <a href="/" class="btn btn-secondary mt-4">← フォームに戻る</a>
-    <a href="/dashboard" class="btn btn-success mt-4 ms-2">ダッシュボード</a>
-</body>
-</html>
+    <!-- 追加の統計情報 -->
+    {% if logs %}
+    <div class="card mt-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">詳細統計</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><i class="fas fa-book"></i> 総ログ数: <strong>{{ logs|length }}</strong> 件</p>
+                    <p><i class="fas fa-calculator"></i> 平均学習時間: <strong>{{ "%.1f"|format(total_time / logs|length) if logs else 0 }}</strong> 分/回</p>
+                </div>
+                <div class="col-md-6">
+                    <p><i class="fas fa-calendar-alt"></i> 最初の記録: <strong>{{ logs[-1].date.strftime('%Y年%m月%d日') if logs else '-' }}</strong></p>
+                    <p><i class="fas fa-calendar-check"></i> 最後の記録: <strong>{{ logs[0].date.strftime('%Y年%m月%d日') if logs else '-' }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="d-flex gap-2 mt-4">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> フォームに戻る
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-success">
+            <i class="fas fa-chart-line"></i> ダッシュボード
+        </a>
+        <a href="{{ url_for('logs') }}" class="btn btn-info">
+            <i class="fas fa-list"></i> ログ一覧
+        </a>
+    </div>
+</div>
+{% endblock %}

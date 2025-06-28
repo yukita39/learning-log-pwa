@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}設定 - 学習ログ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">
+        <i class="fas fa-cog"></i> ユーザー設定
+    </h1>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Google Calendar 設定</h5>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="calendar_id" class="form-label">カレンダーID</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="calendar_id" 
+                                   name="calendar_id" 
+                                   value="{{ current_calendar_id }}"
+                                   placeholder="例: your-calendar-id@group.calendar.google.com">
+                            <small class="form-text text-muted">
+                                空欄にするとデフォルトのカレンダーを使用します
+                            </small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">カレンダーIDの確認方法</h5>
+                    <ol>
+                        <li>Google Calendar を開く</li>
+                        <li>左側のカレンダーリストで対象のカレンダーの「⋮」をクリック</li>
+                        <li>「設定と共有」を選択</li>
+                        <li>「カレンダーの統合」セクションの「カレンダー ID」をコピー</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title">アカウント情報</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">メールアドレス:</dt>
+                        <dd class="col-sm-8">{{ current_user.email }}</dd>
+                        
+                        <dt class="col-sm-4">ユーザー名:</dt>
+                        <dd class="col-sm-8">{{ current_user.username or '未設定' }}</dd>
+                        
+                        <dt class="col-sm-4">登録日:</dt>
+                        <dd class="col-sm-8">{{ current_user.created_at.strftime('%Y年%m月%d日') if current_user.created_at else '不明' }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

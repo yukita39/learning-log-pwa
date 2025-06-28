@@ -1,8 +1,19 @@
-flask
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
-gunicorn
-SQLAlchemy>=2.0
 alembic>=1.13
-psycopg2-binary>=2.9.6
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+WTForms==3.1.2
+email-validator==2.1.0.post1
+Flask-Bcrypt==1.0.1
+Flask==3.0.0
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+WTForms==3.1.2
+email-validator==2.1.0.post1
+SQLAlchemy==2.0.23
+python-dotenv==1.0.0
+google-auth==2.25.2
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
+google-api-python-client==2.111.0
+gunicorn==21.2.0  # Render用のWSGIサーバー
+psycopg2-binary==2.9.9  # PostgreSQL用
