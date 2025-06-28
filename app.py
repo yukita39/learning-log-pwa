@@ -23,6 +23,16 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'このページにアクセスするにはログインが必要です'
 
+def get_service_credentials():
+    # 環境変数から読み込む
+    cred_json = os.getenv('SERVICE_CRED_JSON')
+    if cred_json:
+        return json.loads(cred_json)
+    # ローカルファイルから読み込む
+    else:
+        with open('service_account.json', 'r') as f:
+            return json.load(f)
+
 @login_manager.user_loader
 def load_user(user_id):
     with Session() as session:
