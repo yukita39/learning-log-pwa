@@ -271,7 +271,7 @@ def stats():
         return render_template('stats.html', 
                              days=days,  # 継続日数
                              streak=streak,  # 連続記録日数
-                             total_time=total_time,  # 累計学習時間
+                             total_time=total_time,  # 累計作業時間
                              logs=user_logs)  # ログリスト（追加情報用）
     finally:
         session.close()
@@ -508,8 +508,8 @@ def result():
             # ログを整形
             log_text = f"""日付: {latest_log.date.strftime('%Y年%m月%d日')}
 開始時刻: {latest_log.start_time.strftime('%H:%M')}
-学習時間: {latest_log.duration}分
-学習内容: {latest_log.content}
+作業時間: {latest_log.duration}分
+作業内容: {latest_log.content}
 感想: {latest_log.impression or 'なし'}
 タグ: {latest_log.tags or 'なし'}"""
         else:

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}統計情報 - 学習ログ{% endblock %}
+{% block title %}統計情報 - 作業ログ{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1 class="mb-4 text-warning">📊 学習統計</h1>
+    <h1 class="mb-4 text-warning">📊 作業統計</h1>
 
     <div class="row">
         <!-- カード形式で見やすく表示 -->
@@ -40,7 +40,7 @@
                     <div class="display-1 text-success mb-2">
                         <i class="fas fa-clock"></i>
                     </div>
-                    <h5 class="card-title">累計学習時間</h5>
+                    <h5 class="card-title">累計作業時間</h5>
                     <p class="display-4 fw-bold">{{ total_time }}</p>
                     <p class="text-muted">分</p>
                     <p class="text-muted">({{ "%.1f"|format(total_time / 60) }} 時間)</p>
@@ -57,7 +57,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <p><i class="fas fa-book"></i> 総ログ数: <strong>{{ logs|length }}</strong> 件</p>
-                    <p><i class="fas fa-calculator"></i> 平均学習時間: <strong>{{ "%.1f"|format(total_time / logs|length) if logs else 0 }}</strong> 分/回</p>
+                    <p><i class="fas fa-calculator"></i> 平均作業時間: <strong>{{ "%.1f"|format(total_time / logs|length) if logs else 0 }}</strong> 分/回</p>
                 </div>
                 <div class="col-md-6">
                     <p><i class="fas fa-calendar-alt"></i> 最初の記録: <strong>{{ logs[-1].date.strftime('%Y年%m月%d日') if logs else '-' }}</strong></p>

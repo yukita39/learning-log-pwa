@@ -100,7 +100,7 @@ function updateStats(stats) {
 // Chart.js のデフォルト設定
 Chart.defaults.animation.duration = 500; // アニメーション時間を短縮
 
-// 日別学習時間チャート（簡略化）
+// 日別作業時間チャート（簡略化）
 function createDailyChart(data) {
     const ctx = document.getElementById('chart-daily');
     if (!ctx || !data.labels || data.labels.length === 0) return;
@@ -110,7 +110,7 @@ function createDailyChart(data) {
         data: {
             labels: data.labels,
             datasets: [{
-                label: '学習時間（分）',
+                label: '作業時間（分）',
                 data: data.data,
                 borderColor: 'rgb(75, 192, 192)',
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -192,7 +192,7 @@ function createBarChart(canvasId, data, color) {
         data: {
             labels: data.labels,
             datasets: [{
-                label: '学習時間（分）',
+                label: '作業時間（分）',
                 data: data.data,
                 backgroundColor: color + '33', // 透明度を追加
                 borderColor: color,
@@ -217,12 +217,12 @@ function createBarChart(canvasId, data, color) {
     });
 }
 
-// 週別学習時間チャート
+// 週別作業時間チャート
 function createWeeklyChart(data) {
     return createBarChart('chart-weekly', data, '#36A2EB');
 }
 
-// 月別学習時間チャート
+// 月別作業時間チャート
 function createMonthlyChart(data) {
     return createBarChart('chart-monthly', data, '#FF6384');
 }

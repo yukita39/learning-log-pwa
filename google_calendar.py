@@ -37,7 +37,7 @@ def add_event(calendar_id, date_obj, time_obj, duration_minutes, content, impres
         date_obj: 日付オブジェクト (date)
         time_obj: 時刻オブジェクト (time)
         duration_minutes: 所要時間（分）
-        content: 学習内容（カレンダーのタイトルになる）
+        content: 作業内容（カレンダーのタイトルになる）
         impression: 感想・メモ（オプション）
         tags: タグ（オプション）
     
@@ -63,7 +63,7 @@ def add_event(calendar_id, date_obj, time_obj, duration_minutes, content, impres
         
         # 説明文の作成（感想・メモを含む）
         description_parts = [
-            f"学習内容: {content}",
+            f"作業内容: {content}",
             f"記録時間: {duration_minutes}分"
         ]
         

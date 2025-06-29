@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}学習ログフォーム - 学習ログ{% endblock %}
+{% block title %}作業ログフォーム - 作業ログ{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
@@ -8,7 +8,7 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="mb-4 text-primary">📘 学習ログフォーム</h1>
+    <h1 class="mb-4 text-primary">📘 作業ログフォーム</h1>
 
     <div class="card p-4 shadow-sm">
         <form method="post" action="{{ url_for('log') }}">
@@ -23,7 +23,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">学習内容</label>
+                <label class="form-label">作業内容</label>
                 <textarea class="form-control" name="content" rows="2" required></textarea>
             </div>
 

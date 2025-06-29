@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}学習ダッシュボード - 学習ログ{% endblock %}
+{% block title %}作業ダッシュボード - 作業ログ{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -16,7 +16,7 @@
 {% block content %}
 <div class="container-fluid px-4">
     <h1 class="mb-3 text-primary fs-4">
-        <i class="fas fa-chart-line"></i> 学習ダッシュボード
+        <i class="fas fa-chart-line"></i> 作業ダッシュボード
     </h1>
 
     <!-- 統計サマリー（上部に配置） -->
@@ -24,7 +24,7 @@
         <div class="col-6 col-md-3">
             <div class="card shadow-sm h-100">
                 <div class="card-body p-3 text-center">
-                    <h6 class="text-muted mb-1 small">総学習時間</h6>
+                    <h6 class="text-muted mb-1 small">総作業時間</h6>
                     <p class="h5 mb-0" id="total-hours">-</p>
                 </div>
             </div>
@@ -40,7 +40,7 @@
         <div class="col-6 col-md-3">
             <div class="card shadow-sm h-100">
                 <div class="card-body p-3 text-center">
-                    <h6 class="text-muted mb-1 small">平均学習時間</h6>
+                    <h6 class="text-muted mb-1 small">平均作業時間</h6>
                     <p class="h5 mb-0" id="avg-duration">-</p>
                 </div>
             </div>
@@ -57,12 +57,12 @@
 
     <!-- グラフエリア -->
     <div class="row g-3">
-        <!-- 日別学習時間グラフ -->
+        <!-- 日別作業時間グラフ -->
         <div class="col-12 col-lg-8">
             <div class="card shadow-sm dashboard-card h-100">
                 <div class="card-body p-3">
                     <h6 class="card-title mb-2">
-                        <i class="fas fa-calendar-day"></i> 日別学習時間（30日間）
+                        <i class="fas fa-calendar-day"></i> 日別作業時間（30日間）
                     </h6>
                     <div style="height: 250px; position: relative;">
                         <canvas id="chart-daily"></canvas>
@@ -97,12 +97,12 @@
             <div id="collapseCharts" class="accordion-collapse collapse" data-bs-parent="#additionalCharts">
                 <div class="accordion-body">
                     <div class="row g-3">
-                        <!-- 週別学習時間 -->
+                        <!-- 週別作業時間 -->
                         <div class="col-12 col-md-6">
                             <div class="card shadow-sm dashboard-card">
                                 <div class="card-body p-3">
                                     <h6 class="card-title mb-2">
-                                        <i class="fas fa-calendar-week"></i> 週別学習時間
+                                        <i class="fas fa-calendar-week"></i> 週別作業時間
                                     </h6>
                                     <div style="height: 200px; position: relative;">
                                         <canvas id="chart-weekly"></canvas>
@@ -111,12 +111,12 @@
                             </div>
                         </div>
 
-                        <!-- 月別学習時間 -->
+                        <!-- 月別作業時間 -->
                         <div class="col-12 col-md-6">
                             <div class="card shadow-sm dashboard-card">
                                 <div class="card-body p-3">
                                     <h6 class="card-title mb-2">
-                                        <i class="fas fa-calendar-alt"></i> 月別学習時間
+                                        <i class="fas fa-calendar-alt"></i> 月別作業時間
                                     </h6>
                                     <div style="height: 200px; position: relative;">
                                         <canvas id="chart-monthly"></canvas>

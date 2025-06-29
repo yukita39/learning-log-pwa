@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}ログ一覧 - 学習ログ{% endblock %}
+{% block title %}ログ一覧 - 作業ログ{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -15,7 +15,7 @@
                     <tr>
                         <th>日付</th>
                         <th>開始時刻</th>
-                        <th>学習内容</th>
+                        <th>作業内容</th>
                         <th>時間（分）</th>
                         <th>タグ</th>
                         <th>操作</th>
@@ -55,7 +55,7 @@
                                 <div class="modal-body">
                                     <p><strong>日付:</strong> {{ log.date.strftime('%Y年%m月%d日') }}</p>
                                     <p><strong>時間:</strong> {{ log.start_time.strftime('%H:%M') }} ({{ log.duration }}分)</p>
-                                    <p><strong>学習内容:</strong><br>{{ log.content }}</p>
+                                    <p><strong>作業内容:</strong><br>{{ log.content }}</p>
                                     {% if log.impression %}
                                         <p><strong>感想・メモ:</strong><br>{{ log.impression }}</p>
                                     {% endif %}
@@ -83,7 +83,7 @@
             <div class="card-body">
                 <h5 class="card-title">概要</h5>
                 <p>総ログ数: {{ logs|length }}件</p>
-                <p>総学習時間: {{ logs|sum(attribute='duration') }}分 ({{ "%.1f"|format(logs|sum(attribute='duration') / 60) }}時間)</p>
+                <p>総作業時間: {{ logs|sum(attribute='duration') }}分 ({{ "%.1f"|format(logs|sum(attribute='duration') / 60) }}時間)</p>
             </div>
         </div>
     {% else %}
