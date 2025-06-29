@@ -15,7 +15,12 @@ from google_calendar import add_event
 from forms import RegistrationForm, LoginForm
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
+# SECRET_KEYが設定されていない場合はエラー
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set!")
+
+app.secret_key = SECRET_KEY
 
 # Flask-Login設定
 login_manager = LoginManager()
@@ -32,6 +37,14 @@ def get_service_credentials():
     else:
         with open('service_account.json', 'r') as f:
             return json.load(f)
+
+if os.getenv('RENDER'):
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        PERMANENT_SESSION_LIFETIME=timedelta(days=7)
+    )
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -509,4 +522,4 @@ def result():
 if __name__ == '__main__':
     # テーブルが存在しない場合は作成
     Base.metadata.create_all(engine)
-    app.run(debug=True)
+    app.run(debug=False)
