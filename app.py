@@ -57,7 +57,8 @@ def register():
             session.add(new_user)
             session.commit()
             
-            flash("登録が完了しました！ログインしてください。", "success")
+            flash("登録が完了しました！", "success")
+            flash("Googleカレンダー連携を利用する場合は、ログイン後に設定画面でカレンダーIDを設定してください。", "info")
             return redirect(url_for("login"))
     
     return render_template("register.html", form=form)
@@ -96,6 +97,8 @@ def index():
     return render_template('index.html', today=datetime.today().strftime('%Y-%m-%d'))
 
 # ログ記録処理（POSTのみ） - 1つだけ残す
+# app.py の log 関数を以下のように修正
+
 @app.route('/log', methods=['POST'])
 @login_required
 def log():
@@ -127,33 +130,38 @@ def log():
             session.add(new_log)
             session.commit()
             
-            # Google Calendar に追加
+            # Google Calendar に追加（ユーザーが設定している場合のみ）
             calendar_success = False
             calendar_error = None
             
             try:
                 # 現在のユーザーのカレンダーIDを取得
                 user = session.query(User).get(current_user.id)
-                calendar_id = user.calendar_id if user.calendar_id else os.getenv("CALENDAR_ID", "primary")
                 
-                print(f"使用するカレンダーID: {calendar_id}")
-                
-                # add_event 関数を呼び出し（タグと感想も渡す）
-                result = add_event(
-                    calendar_id, 
-                    date_obj, 
-                    time_obj, 
-                    duration, 
-                    content,
-                    impression,  # 感想・メモを追加
-                    tags         # タグを追加
-                )
-                
-                if result:
-                    calendar_success = True
-                    print("Google Calendar への追加成功")
+                # ユーザーが個別にカレンダーIDを設定している場合のみ処理
+                if user.calendar_id and user.calendar_id.strip():
+                    calendar_id = user.calendar_id.strip()
+                    print(f"ユーザー専用カレンダーID使用: {calendar_id}")
+                    
+                    # add_event 関数を呼び出し
+                    result = add_event(
+                        calendar_id, 
+                        date_obj, 
+                        time_obj, 
+                        duration, 
+                        content,
+                        impression,
+                        tags
+                    )
+                    
+                    if result:
+                        calendar_success = True
+                        print("Google Calendar への追加成功")
+                    else:
+                        print("Google Calendar への追加に失敗")
                 else:
-                    print("Google Calendar への追加に失敗")
+                    # カレンダーIDが設定されていない場合
+                    print("カレンダーIDが未設定のため、カレンダーには追加しません")
                     
             except ImportError as e:
                 calendar_error = f"Google Calendar モジュールのインポートエラー: {e}"
@@ -168,11 +176,15 @@ def log():
             # メッセージ表示
             if calendar_success:
                 flash('ログを記録し、カレンダーに追加しました', 'success')
-            else:
+            elif user.calendar_id and user.calendar_id.strip():
+                # カレンダーIDは設定されているが、追加に失敗した場合
                 if calendar_error:
                     flash(f'ログは記録されました（カレンダー追加失敗: {calendar_error}）', 'warning')
                 else:
                     flash('ログは記録されました（カレンダーには追加されませんでした）', 'warning')
+            else:
+                # カレンダーIDが未設定の場合
+                flash('ログを記録しました（カレンダー連携を利用するには設定画面でカレンダーIDを設定してください）', 'info')
             
         finally:
             session.close()
@@ -183,7 +195,7 @@ def log():
         print(f"ログ登録エラー: {e}")
         flash(f'ログの登録に失敗しました: {str(e)}', 'danger')
         return redirect(url_for('index'))
-
+    
 # ログ一覧表示
 @app.route('/logs')
 @login_required
@@ -397,6 +409,8 @@ def api_dashboard():
     finally:
         session.close()
 
+# app.py の settings ルートも改善
+
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -406,22 +420,34 @@ def settings():
         user = session.query(User).get(current_user.id)
         
         if request.method == 'POST':
+            # カレンダー連携解除ボタンが押された場合
+            if request.form.get('clear_calendar') == '1':
+                user.calendar_id = None
+                session.commit()
+                flash('カレンダー連携を解除しました', 'info')
+                return redirect(url_for('settings'))
+            
             # カレンダーIDの更新
             calendar_id = request.form.get('calendar_id', '').strip()
             
             if calendar_id:
-                user.calendar_id = calendar_id
-                session.commit()
-                flash('カレンダーIDを更新しました', 'success')
+                # 簡単な検証（@を含むかチェック）
+                if '@' in calendar_id:
+                    user.calendar_id = calendar_id
+                    session.commit()
+                    flash('カレンダーIDを設定しました。今後のログはこのカレンダーに追加されます。', 'success')
+                else:
+                    flash('カレンダーIDの形式が正しくありません。「@」を含む完全なIDを入力してください。', 'danger')
             else:
+                # 空欄の場合は連携を解除
                 user.calendar_id = None
                 session.commit()
-                flash('カレンダーIDをデフォルトに戻しました', 'info')
+                flash('カレンダー連携を解除しました', 'info')
             
             return redirect(url_for('settings'))
         
-        # 現在の設定を表示
-        current_calendar_id = user.calendar_id or os.getenv("CALENDAR_ID", "primary")
+        # 現在の設定を表示（個人のカレンダーIDのみ、環境変数のデフォルトは表示しない）
+        current_calendar_id = user.calendar_id or ''
         return render_template('settings.html', current_calendar_id=current_calendar_id)
         
     finally:
