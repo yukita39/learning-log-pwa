@@ -1,12 +1,74 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
 .venv/
-# VSCode
-.vscode/
+venv/
+env/
+ENV/
 
-client_secret.json
-token.json
-service_account.json
+# Flask
+instance/
+.webassets-cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 環境設定
+.env
+.env.*
 *.env
+
+# データベース
 *.db
+*.sqlite
+*.sqlite3
+
+# 機密情報（絶対に公開しない）
+client_secret.json
+service_account.json
+token.json
+*.pem
+*.key
+*.cert
+*.crt
+
+# ログファイル
+*.log
+logs/
+
+# テスト関連
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# 一時ファイル
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# 開発用ファイル
+check_db_connection.py
+test_*.py
+*_test.py
+fix_*.py
+clear_*.py
+reset_*.py
