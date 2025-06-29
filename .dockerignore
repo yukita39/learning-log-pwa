@@ -1,0 +1,14 @@
+.env
+*.db
+__pycache__/
+.venv/
+venv/
+.git/
+.gitignore
+*.pyc
+*.pyo
+service_account.json
+client_secret.json
+token.json
+README.md
+.DS_Store
