@@ -1,19 +1,39 @@
-# db.py
+# db.py - PostgreSQL対応版
 import os
 from datetime import datetime
 from sqlalchemy import create_engine, Date, Time, Column, Integer, String, DateTime, Boolean, ForeignKey, Float, Text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+
+# .envファイルを読み込み（ローカル開発用）
+load_dotenv()
 
 # ── 接続文字列 ───────────────────────────────
 DATABASE_URL = os.getenv(
-    "DATABASE_URL",                # 本番 Render ではここに Postgres URL
-    "sqlite:///learning.db"        # 未設定時はローカル SQLite
+    "DATABASE_URL",                # Renderの環境変数から取得
+    "sqlite:///learning.db"        # ローカル開発時のフォールバック
 )
+
+# RenderのPostgreSQLは古い形式のURLを使うことがあるので修正
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+print(f"Using database: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}")
+
 # ────────────────────────────────────────────
 
-engine = create_engine(DATABASE_URL, future=True, echo=False)
+# エンジンの作成（PostgreSQL用の設定を追加）
+engine = create_engine(
+    DATABASE_URL, 
+    future=True, 
+    echo=False,
+    # PostgreSQL用の追加設定
+    pool_pre_ping=True,  # 接続の健全性をチェック
+    pool_recycle=300,    # 5分ごとに接続をリサイクル
+)
+
 Session = sessionmaker(bind=engine, expire_on_commit=False)
 Base = declarative_base()
 
@@ -21,7 +41,7 @@ class User(Base, UserMixin):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(80), unique=True, nullable=True)  # オプション
+    username = Column(String(80), unique=True, nullable=True)
     email = Column(String(120), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -59,7 +79,24 @@ class Log(Base):
     user = relationship("User", back_populates="logs")
 
 
-# 開発用: 初回だけ実行してテーブルを生成
+# 開発用: 直接実行してテーブルを生成
 if __name__ == "__main__":
+    # 既存のテーブル情報を表示
+    from sqlalchemy import inspect
+    
+    inspector = inspect(engine)
+    existing_tables = inspector.get_table_names()
+    
+    print(f"Existing tables: {existing_tables}")
+    
+    if existing_tables:
+        print("\nTable details:")
+        for table in existing_tables:
+            print(f"\n{table}:")
+            for column in inspector.get_columns(table):
+                print(f"  - {column['name']}: {column['type']}")
+    
+    # テーブルを作成
+    print("\nCreating tables...")
     Base.metadata.create_all(engine)
-    print("Database tables created successfully!")
+    print("Tables created successfully!")
