@@ -108,6 +108,14 @@ def internal_error(error):
                          error_code=500, 
                          error_message="サーバーエラーが発生しました"), 500
 
+@app.route('/redis-status')
+def redis_status():
+    redis_url = os.getenv('REDIS_URL', 'memory://')
+    return jsonify({
+        'using_redis': not redis_url.startswith('memory://'),
+        'url_type': 'redis' if 'redis://' in redis_url else 'memory'
+    })
+
 # --- ルート: ユーザー登録 ---
 @app.route("/register", methods=["GET", "POST"])
 @limiter.limit("5 per hour")  # 1時間に5回まで
