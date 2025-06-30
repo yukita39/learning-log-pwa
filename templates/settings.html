@@ -1,114 +1,129 @@
-{% extends "base.html" %}
-
-{% block title %}設定 - 作業ログ{% endblock %}
-
-{% block content %}
-<div class="container">
-    <h1 class="mb-4">
-        <i class="fas fa-cog"></i> ユーザー設定
-    </h1>
-
-    <div class="row">
-        <div class="col-lg-6">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h5 class="card-title">Google Calendar 設定</h5>
-                    
-                    <!-- カレンダー連携の状態表示 -->
-                    {% if current_calendar_id and current_calendar_id != 'primary' %}
-                        <div class="alert alert-success">
-                            <i class="fas fa-check-circle"></i> カレンダー連携が有効です
-                        </div>
-                    {% else %}
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> カレンダー連携が設定されていません
-                        </div>
-                    {% endif %}
-                    
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="calendar_id" class="form-label">カレンダーID</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="calendar_id" 
-                                   name="calendar_id" 
-                                   value="{{ current_calendar_id if current_calendar_id != 'primary' else '' }}"
-                                   placeholder="例: your-calendar-id@group.calendar.google.com">
-                            <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> 
-                                カレンダーIDを設定すると、作業ログがGoogleカレンダーに自動的に追加されます
-                            </small>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 保存
-                        </button>
-                        
-                        {% if current_calendar_id and current_calendar_id != 'primary' %}
-                            <button type="submit" name="clear_calendar" value="1" class="btn btn-outline-danger ms-2">
-                                <i class="fas fa-times"></i> 連携を解除
-                            </button>
-                        {% endif %}
-                    </form>
-                </div>
-            </div>
-
-            <div class="card shadow mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-question-circle"></i> カレンダーIDの確認方法
-                    </h5>
-                    <ol class="mb-0">
-                        <li>Google Calendar を開く</li>
-                        <li>左側のカレンダーリストで対象のカレンダーの「⋮」をクリック</li>
-                        <li>「設定と共有」を選択</li>
-                        <li>「カレンダーの統合」セクションの「カレンダー ID」をコピー</li>
-                        <li class="text-danger">
-                            <strong>重要:</strong> サービスアカウントにカレンダーへの編集権限を付与してください
-                        </li>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="card shadow mt-3">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-shield-alt"></i> プライバシーについて
-                    </h5>
-                    <p class="mb-0">
-                        カレンダーIDを設定しない場合、作業ログはこのアプリ内にのみ保存され、
-                        Googleカレンダーには一切書き込まれません。
-                    </p>
-                </div>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - Working Log PWA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-book"></i> Working Log PWA
+            </a>
+            <div class="ms-auto">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-home"></i> ホームに戻る
+                </a>
             </div>
         </div>
+    </nav>
 
-        <div class="col-lg-6">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h5 class="card-title">アカウント情報</h5>
-                    <dl class="row">
-                        <dt class="col-sm-4">メールアドレス:</dt>
-                        <dd class="col-sm-8">{{ current_user.email }}</dd>
-                        
-                        <dt class="col-sm-4">ユーザー名:</dt>
-                        <dd class="col-sm-8">{{ current_user.username or '未設定' }}</dd>
-                        
-                        <dt class="col-sm-4">登録日:</dt>
-                        <dd class="col-sm-8">{{ current_user.created_at.strftime('%Y年%m月%d日') if current_user.created_at else '不明' }}</dd>
-                        
-                        <dt class="col-sm-4">カレンダー連携:</dt>
-                        <dd class="col-sm-8">
-                            {% if current_user.calendar_id %}
-                                <span class="badge bg-success">有効</span>
-                            {% else %}
-                                <span class="badge bg-secondary">無効</span>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="mb-4"><i class="fas fa-cog"></i> 設定</h2>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- アカウント情報セクション -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user"></i> アカウント情報</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <strong>メールアドレス:</strong>
+                            </div>
+                            <div class="col-sm-9">
+                                {{ user_email if user_email else 'メールアドレス未設定' }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <strong>ユーザー名:</strong>
+                            </div>
+                            <div class="col-sm-9">
+                                {{ user_username if user_username else 'ユーザー名未設定' }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="d-grid gap-2 d-md-block">
+                            <a href="{{ url_for('change_password') }}" class="btn btn-primary">
+                                <i class="fas fa-key"></i> パスワードを変更
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Googleカレンダー連携セクション -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-calendar"></i> Googleカレンダー連携</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('settings') }}">
+                            <div class="mb-3">
+                                <label for="calendar_id" class="form-label">カレンダーID</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="calendar_id" 
+                                       name="calendar_id" 
+                                       value="{{ current_calendar_id }}"
+                                       placeholder="example@group.calendar.google.com">
+                                <div class="form-text">
+                                    GoogleカレンダーのIDを入力してください。カレンダーの設定画面で確認できます。
+                                </div>
+                            </div>
+                            
+                            {% if current_calendar_id %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> 現在カレンダー連携が有効です
+                                </div>
                             {% endif %}
-                        </dd>
-                    </dl>
+                            
+                            <div class="d-grid gap-2 d-md-block">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 保存
+                                </button>
+                                {% if current_calendar_id %}
+                                    <button type="submit" name="clear_calendar" value="1" class="btn btn-outline-danger">
+                                        <i class="fas fa-unlink"></i> 連携を解除
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- その他の設定（将来の拡張用） -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-shield-alt"></i> セキュリティとプライバシー</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-lock"></i> あなたのデータは安全に保護されています。
+                            パスワードは暗号化されて保存され、作業記録はあなただけがアクセスできます。
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
