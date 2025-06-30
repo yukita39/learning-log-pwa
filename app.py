@@ -7,6 +7,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import json
 
+# Flask-Limiter のインポート
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 # db.py からインポート
 from db import Session, Log, User, Base, engine
 from google_calendar import add_event
@@ -21,6 +25,35 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is not set!")
 
 app.secret_key = SECRET_KEY
+
+# Render環境かどうかで自動切り替え
+def get_redis_url():
+    """環境に応じたRedis URLを返す"""
+    if os.getenv('RENDER'):
+        # 本番環境（Render内部）
+        return os.getenv('REDIS_URL')
+    elif os.getenv('REDIS_EXTERNAL_URL'):
+        # 開発環境（Render外部接続）
+        return os.getenv('REDIS_EXTERNAL_URL')
+    else:
+        # 開発環境（ローカルRedis）
+        return "redis://localhost:6379"
+
+REDIS_URL = get_redis_url()
+
+# メモリフォールバック付き
+if not REDIS_URL:
+    print("警告: Redis URLが設定されていません。メモリストレージを使用します。")
+    REDIS_URL = "memory://"
+
+# Flask-Limiter の設定
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=REDIS_URL,  # ValkeyもRedisプロトコルを使用
+    swallow_errors=True,
+)
 
 # Flask-Login設定
 login_manager = LoginManager()
@@ -51,8 +84,33 @@ def load_user(user_id):
     with Session() as session:
         return session.query(User).get(int(user_id))
 
+# エラーハンドラー（レート制限エラー用）
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    flash('リクエストが多すぎます。しばらく待ってから再度お試しください。', 'warning')
+    return render_template('error.html', 
+                         error_code=429, 
+                         error_message="リクエスト制限に達しました"), 429
+
+# 404エラーハンドラー
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('error.html', 
+                         error_code=404, 
+                         error_message="ページが見つかりません"), 404
+
+# 500エラーハンドラー
+@app.errorhandler(500)
+def internal_error(error):
+    with Session() as session:
+        session.rollback()
+    return render_template('error.html', 
+                         error_code=500, 
+                         error_message="サーバーエラーが発生しました"), 500
+
 # --- ルート: ユーザー登録 ---
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("5 per hour")  # 1時間に5回まで
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -78,6 +136,7 @@ def register():
 
 # --- ルート: ログイン ---
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per hour")  # 1時間に10回まで
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -109,11 +168,10 @@ def logout():
 def index():
     return render_template('index.html', today=datetime.today().strftime('%Y-%m-%d'))
 
-# ログ記録処理（POSTのみ） - 1つだけ残す
-# app.py の log 関数を以下のように修正
-
+# ログ記録処理（POSTのみ）
 @app.route('/log', methods=['POST'])
 @login_required
+@limiter.limit("30 per hour")  # 1時間に30回まで
 def log():
     try:
         # フォームからデータ取得
@@ -312,6 +370,7 @@ def tags_top():
 # ダッシュボード用のAPIエンドポイント（dashboard.jsから呼ばれる）
 @app.route('/api/dashboard')
 @login_required
+@limiter.limit("60 per hour")  # APIは少し多めに設定
 def api_dashboard():
     session = Session()
     try:
@@ -426,6 +485,7 @@ def api_dashboard():
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("20 per hour")  # 設定変更は制限を設ける
 def settings():
     """ユーザー設定ページ"""
     session = Session()
@@ -468,6 +528,7 @@ def settings():
 
 @app.route('/api/popular-tags')
 @login_required
+@limiter.limit("60 per hour")
 def popular_tags():
     """よく使うタグを取得するAPI"""
     session = Session()
