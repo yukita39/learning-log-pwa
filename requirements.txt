@@ -14,4 +14,4 @@ psycopg2-binary==2.9.7
 werkzeug==2.3.7
 alembic
 Flask-Limiter==3.5.0
-Redis
+redis==5.0.1
