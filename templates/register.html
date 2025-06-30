@@ -25,6 +25,10 @@
             width: 20px;
             text-align: center;
         }
+        .requirement .badge {
+            font-size: 0.7rem;
+            margin-left: 0.25rem;
+        }
         .password-strength {
             height: 5px;
             margin-top: 0.5rem;
@@ -40,6 +44,10 @@
         .strength-fair { background-color: #ffc107; }
         .strength-good { background-color: #28a745; }
         .strength-strong { background-color: #20c997; }
+        .alert-light {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6 !important;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +97,16 @@
                             
                             <div class="mb-3">
                                 {{ form.password.label(class="form-label") }}
+                                
+                                <!-- パスワード要件の説明 -->
+                                <div class="alert alert-light border mb-2">
+                                    <small>
+                                        <strong>パスワード要件：</strong><br>
+                                        <span class="text-danger">●</span> <strong>必須</strong>: 8文字以上、英字と数字の両方を含む<br>
+                                        <span class="text-success">●</span> <strong>推奨</strong>: 大文字、小文字、数字、特殊文字(!@#$%など)のうち3種類以上
+                                    </small>
+                                </div>
+                                
                                 {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), 
                                                 id="password",
                                                 onkeyup="checkPassword()") }}
@@ -104,19 +122,19 @@
                                 
                                 <div class="password-requirements">
                                     <div class="requirement" id="req-length">
-                                        <i class="fas fa-circle"></i> 8文字以上
+                                        <i class="fas fa-circle"></i> 8文字以上 <span class="badge bg-danger">必須</span>
                                     </div>
                                     <div class="requirement" id="req-letter">
-                                        <i class="fas fa-circle"></i> 英字を含む
+                                        <i class="fas fa-circle"></i> 英字を含む <span class="badge bg-danger">必須</span>
                                     </div>
                                     <div class="requirement" id="req-number">
-                                        <i class="fas fa-circle"></i> 数字を含む
+                                        <i class="fas fa-circle"></i> 数字を含む <span class="badge bg-danger">必須</span>
                                     </div>
                                     <div class="requirement" id="req-special">
-                                        <i class="fas fa-circle"></i> 特殊文字を含む（推奨）
+                                        <i class="fas fa-circle"></i> 特殊文字を含む <span class="badge bg-success">推奨</span>
                                     </div>
                                     <div class="requirement" id="req-case">
-                                        <i class="fas fa-circle"></i> 大文字と小文字を含む（推奨）
+                                        <i class="fas fa-circle"></i> 大文字と小文字を含む <span class="badge bg-success">推奨</span>
                                     </div>
                                 </div>
                             </div>
@@ -175,6 +193,9 @@
             updateRequirement('req-special', requirements.special);
             updateRequirement('req-case', requirements.case);
             
+            // 必須要件を満たしているかチェック
+            const mandatoryMet = requirements.length && requirements.letter && requirements.number;
+            
             // パスワード強度を計算
             let strength = 0;
             Object.values(requirements).forEach(met => {
@@ -186,13 +207,14 @@
             const strengthPercent = (strength / 5) * 100;
             strengthBar.style.width = strengthPercent + '%';
             
-            if (strength <= 2) {
+            // 必須要件を満たしていない場合は常に弱い
+            if (!mandatoryMet) {
                 strengthBar.className = 'password-strength-bar strength-weak';
             } else if (strength === 3) {
                 strengthBar.className = 'password-strength-bar strength-fair';
             } else if (strength === 4) {
                 strengthBar.className = 'password-strength-bar strength-good';
-            } else {
+            } else if (strength === 5) {
                 strengthBar.className = 'password-strength-bar strength-strong';
             }
             
