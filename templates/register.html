@@ -1,62 +1,243 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <h2>新規登録</h2>
-            <form method="POST">
-                {{ form.hidden_tag() }}
-                <div class="mb-3">
-                    {{ form.username.label(class="form-label") }}
-                    {{ form.username(class="form-control") }}
-                    {% if form.username.errors %}
-                        <div class="text-danger">
-                            {% for error in form.username.errors %}
-                                <small>{{ error }}</small>
-                            {% endfor %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー登録 - Working Log PWA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .password-requirements {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .requirement {
+            margin: 0.25rem 0;
+            transition: all 0.3s ease;
+        }
+        .requirement.satisfied {
+            color: #28a745;
+        }
+        .requirement.not-satisfied {
+            color: #6c757d;
+        }
+        .requirement i {
+            width: 20px;
+            text-align: center;
+        }
+        .password-strength {
+            height: 5px;
+            margin-top: 0.5rem;
+            background-color: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .password-strength-bar {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .strength-weak { background-color: #dc3545; }
+        .strength-fair { background-color: #ffc107; }
+        .strength-good { background-color: #28a745; }
+        .strength-strong { background-color: #20c997; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">ユーザー登録</h4>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST" action="{{ url_for('register') }}" novalidate>
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% else %}
+                                    <small class="form-text text-muted">3-20文字の英数字とアンダースコア</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.password.label(class="form-label") }}
+                                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), 
+                                                id="password",
+                                                onkeyup="checkPassword()") }}
+                                {% if form.password.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="password-strength">
+                                    <div class="password-strength-bar" id="strengthBar"></div>
+                                </div>
+                                
+                                <div class="password-requirements">
+                                    <div class="requirement" id="req-length">
+                                        <i class="fas fa-circle"></i> 8文字以上
+                                    </div>
+                                    <div class="requirement" id="req-letter">
+                                        <i class="fas fa-circle"></i> 英字を含む
+                                    </div>
+                                    <div class="requirement" id="req-number">
+                                        <i class="fas fa-circle"></i> 数字を含む
+                                    </div>
+                                    <div class="requirement" id="req-special">
+                                        <i class="fas fa-circle"></i> 特殊文字を含む（推奨）
+                                    </div>
+                                    <div class="requirement" id="req-case">
+                                        <i class="fas fa-circle"></i> 大文字と小文字を含む（推奨）
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.password_confirm.label(class="form-label") }}
+                                {{ form.password_confirm(class="form-control" + (" is-invalid" if form.password_confirm.errors else ""),
+                                                        id="password_confirm",
+                                                        onkeyup="checkPasswordMatch()") }}
+                                {% if form.password_confirm.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.password_confirm.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div id="password-match-feedback"></div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                        
+                        <div class="text-center mt-3">
+                            <p>既にアカウントをお持ちの方は <a href="{{ url_for('login') }}">ログイン</a></p>
                         </div>
-                    {% endif %}
+                    </div>
                 </div>
-                <div class="mb-3">
-                    {{ form.email.label(class="form-label") }}
-                    {{ form.email(class="form-control") }}
-                    {% if form.email.errors %}
-                        <div class="text-danger">
-                            {% for error in form.email.errors %}
-                                <small>{{ error }}</small>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                
+                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-shield-alt"></i> セキュリティについて</h6>
+                    <ul class="mb-0 small">
+                        <li>パスワードは安全にハッシュ化されて保存されます</li>
+                        <li>定期的なパスワード変更を推奨します</li>
+                        <li>他のサービスと同じパスワードの使用は避けてください</li>
+                    </ul>
                 </div>
-                <div class="mb-3">
-                    {{ form.password.label(class="form-label") }}
-                    {{ form.password(class="form-control") }}
-                    {% if form.password.errors %}
-                        <div class="text-danger">
-                            {% for error in form.password.errors %}
-                                <small>{{ error }}</small>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="mb-3">
-                    {{ form.confirm_password.label(class="form-label") }}
-                    {{ form.confirm_password(class="form-control") }}
-                    {% if form.confirm_password.errors %}
-                        <div class="text-danger">
-                            {% for error in form.confirm_password.errors %}
-                                <small>{{ error }}</small>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                {{ form.submit(class="btn btn-primary") }}
-            </form>
-            <p class="mt-3">
-                既にアカウントをお持ちの方は
-                <a href="{{ url_for('login') }}">ログイン</a>
-            </p>
+            </div>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <script>
+        function checkPassword() {
+            const password = document.getElementById('password').value;
+            const requirements = {
+                length: password.length >= 8,
+                letter: /[a-zA-Z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+                case: /[a-z]/.test(password) && /[A-Z]/.test(password)
+            };
+            
+            // 要件チェック表示を更新
+            updateRequirement('req-length', requirements.length);
+            updateRequirement('req-letter', requirements.letter);
+            updateRequirement('req-number', requirements.number);
+            updateRequirement('req-special', requirements.special);
+            updateRequirement('req-case', requirements.case);
+            
+            // パスワード強度を計算
+            let strength = 0;
+            Object.values(requirements).forEach(met => {
+                if (met) strength++;
+            });
+            
+            // 強度バーを更新
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthPercent = (strength / 5) * 100;
+            strengthBar.style.width = strengthPercent + '%';
+            
+            if (strength <= 2) {
+                strengthBar.className = 'password-strength-bar strength-weak';
+            } else if (strength === 3) {
+                strengthBar.className = 'password-strength-bar strength-fair';
+            } else if (strength === 4) {
+                strengthBar.className = 'password-strength-bar strength-good';
+            } else {
+                strengthBar.className = 'password-strength-bar strength-strong';
+            }
+            
+            // パスワード確認フィールドがある場合は一致チェック
+            checkPasswordMatch();
+        }
+        
+        function updateRequirement(id, satisfied) {
+            const element = document.getElementById(id);
+            const icon = element.querySelector('i');
+            
+            if (satisfied) {
+                element.classList.remove('not-satisfied');
+                element.classList.add('satisfied');
+                icon.className = 'fas fa-check-circle';
+            } else {
+                element.classList.remove('satisfied');
+                element.classList.add('not-satisfied');
+                icon.className = 'fas fa-circle';
+            }
+        }
+        
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('password_confirm').value;
+            const feedback = document.getElementById('password-match-feedback');
+            
+            if (confirmPassword === '') {
+                feedback.innerHTML = '';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                feedback.innerHTML = '<small class="text-success"><i class="fas fa-check-circle"></i> パスワードが一致しています</small>';
+            } else {
+                feedback.innerHTML = '<small class="text-danger"><i class="fas fa-times-circle"></i> パスワードが一致しません</small>';
+            }
+        }
+        
+        // 初期状態を設定
+        document.addEventListener('DOMContentLoaded', function() {
+            checkPassword();
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
