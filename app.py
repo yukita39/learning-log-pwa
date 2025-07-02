@@ -49,12 +49,18 @@ if not REDIS_URL:
     print("警告: Redis URLが設定されていません。メモリストレージを使用します。")
     REDIS_URL = "memory://"
 
-# Flask-Limiter の設定
+def get_user_id():
+    """ユーザーIDベースのキー関数"""
+    if current_user.is_authenticated:
+        return f"user_{current_user.id}"
+    return get_remote_address()
+
+# レート制限の設定を更新
 limiter = Limiter(
     app=app,
-    key_func=get_remote_address,
+    key_func=get_user_id,  # IPアドレスではなくユーザーIDを使用
     default_limits=["200 per day", "50 per hour"],
-    storage_uri=REDIS_URL,  # ValkeyもRedisプロトコルを使用
+    storage_uri=REDIS_URL,
     swallow_errors=True,
 )
 
@@ -563,10 +569,10 @@ def popular_tags():
     finally:
         session.close()
 
-# パスワード変更時に履歴を保存するように修正
+# 認証が必要なルートではユーザーIDベースに
 @app.route('/settings/password', methods=['GET', 'POST'])
 @login_required
-@limiter.limit("10 per hour")
+@limiter.limit("20 per hour", key_func=get_user_id)  # 制限も緩和
 def change_password():
     """パスワード変更ページ（履歴チェック付き）"""
     from forms import ChangePasswordForm
