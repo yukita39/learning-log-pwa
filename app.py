@@ -563,46 +563,6 @@ def popular_tags():
     finally:
         session.close()
 
-@app.route('/settings/password', methods=['GET', 'POST'])
-@login_required
-@limiter.limit("10 per hour")  # パスワード変更の試行回数を制限
-def change_password():
-    """パスワード変更ページ"""
-    from forms import ChangePasswordForm
-    form = ChangePasswordForm()
-    
-    if form.validate_on_submit():
-        session = Session()
-        try:
-            # 現在のユーザーを取得
-            user = session.query(User).get(current_user.id)
-            
-            # 現在のパスワードが正しいか確認
-            if not user.check_password(form.current_password.data):
-                flash('現在のパスワードが正しくありません', 'danger')
-                return redirect(url_for('change_password'))
-            
-            # 新しいパスワードを設定
-            user.set_password(form.new_password.data)
-            session.commit()
-            
-            # パスワード変更の通知（オプション）
-            flash('パスワードが正常に変更されました', 'success')
-            
-            # セキュリティのため、再ログインを促す（オプション）
-            logout_user()
-            flash('セキュリティのため、新しいパスワードで再度ログインしてください', 'info')
-            return redirect(url_for('login'))
-            
-        except Exception as e:
-            session.rollback()
-            flash('パスワードの変更中にエラーが発生しました', 'danger')
-            print(f"パスワード変更エラー: {e}")
-        finally:
-            session.close()
-    
-    return render_template('change_password.html', form=form)
-
 # パスワード変更時に履歴を保存するように修正
 @app.route('/settings/password', methods=['GET', 'POST'])
 @login_required
