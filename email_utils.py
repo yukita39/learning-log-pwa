@@ -77,3 +77,73 @@ def send_email(to_email, subject, body, html_body=None):
         logger.error(f"予期しないエラー: {type(e).__name__}: {e}")
         
     return False
+
+def send_password_reset_email(user_email, reset_url):
+    """パスワードリセットメールを送信"""
+    subject = "パスワードリセットのご案内 - Working Log PWA"
+    
+    body = f"""
+こんにちは、
+
+Working Log PWAのパスワードリセットのリクエストを受け付けました。
+
+以下のリンクをクリックして、新しいパスワードを設定してください：
+{reset_url}
+
+このリンクは1時間で有効期限が切れます。
+
+もしこのリクエストを行っていない場合は、このメールを無視してください。
+あなたのパスワードは変更されません。
+
+ご不明な点がございましたら、サポートまでお問い合わせください。
+
+Working Log PWA チーム
+    """
+    
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #0066cc;">パスワードリセットのご案内</h2>
+        
+        <p>こんにちは、</p>
+        
+        <p>Working Log PWAのパスワードリセットのリクエストを受け付けました。</p>
+        
+        <p>以下のボタンをクリックして、新しいパスワードを設定してください：</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{reset_url}" 
+               style="background-color: #0066cc; color: white; padding: 12px 30px; 
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+                パスワードをリセット
+            </a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+            またはこちらのURLをコピーしてブラウザに貼り付けてください：<br>
+            <span style="word-break: break-all;">{reset_url}</span>
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+        
+        <p style="color: #666; font-size: 14px;">
+            <strong>注意事項：</strong><br>
+            ・このリンクは1時間で有効期限が切れます。<br>
+            ・もしこのリクエストを行っていない場合は、このメールを無視してください。<br>
+            ・あなたのパスワードは変更されません。
+        </p>
+        
+        <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            Working Log PWA チーム
+        </p>
+    </div>
+</body>
+</html>
+    """
+    
+    return send_email(user_email, subject, body, html_body)
