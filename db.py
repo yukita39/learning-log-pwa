@@ -1,10 +1,13 @@
 # db.py - PostgreSQL対応版
-import os
-from datetime import datetime
-from sqlalchemy import create_engine, Date, Time, Column, Integer, String, DateTime, Boolean, ForeignKey, Float, Text
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-from flask_login import UserMixin
+from sqlalchemy import Column, Integer, String, Text, Date, Time, DateTime, ForeignKey, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+from datetime import datetime, timedelta
+import secrets
+import os
 from dotenv import load_dotenv
 
 # .envファイルを読み込み（ローカル開発用）
@@ -41,24 +44,43 @@ class User(Base, UserMixin):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(80), unique=True, nullable=True)
-    email = Column(String(120), nullable=False, unique=True)
+    email = Column(String(120), unique=True, nullable=False)
+    username = Column(String(80), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
     calendar_id = Column(String(255), nullable=True)
 
-    # User が持つ Log のリスト
-    logs = relationship("Log", back_populates="user", cascade="all, delete-orphan")
-
+    # リレーション
+    logs = relationship('Log', back_populates='user', lazy='dynamic')
+    password_history = relationship('PasswordHistory', back_populates='user', order_by='PasswordHistory.created_at.desc()')
+    reset_tokens = relationship('PasswordResetToken', back_populates='user')
+    
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        """パスワードを設定（履歴も保存）"""
+        # 新しいパスワードのハッシュを生成
+        new_hash = generate_password_hash(password)
+        
+        # パスワード履歴に追加（セッション内で行う）
+        # 注: この関数を呼ぶときは必ずセッション内で実行すること
+        
+        self.password_hash = new_hash
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     
-    def get_id(self):
-        return str(self.id)
+    def check_password_history(self, password, history_count=5):
+        """過去のパスワードと照合（デフォルトは過去5回分）"""
+        # 現在のパスワードをチェック
+        if self.check_password(password):
+            return True
+        
+        # 過去のパスワードをチェック
+        for history in self.password_history[:history_count]:
+            if check_password_hash(history.password_hash, password):
+                return True
+        
+        return False
 
 
 class Log(Base):
@@ -100,3 +122,44 @@ if __name__ == "__main__":
     print("\nCreating tables...")
     Base.metadata.create_all(engine)
     print("Tables created successfully!")
+
+# パスワード履歴を保存するテーブル
+class PasswordHistory(Base):
+    __tablename__ = 'password_history'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # リレーション
+    user = relationship('User', back_populates='password_history')
+
+# パスワードリセットトークンを保存するテーブル
+class PasswordResetToken(Base):
+    __tablename__ = 'password_reset_tokens'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    token = Column(String(100), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    
+    # リレーション
+    user = relationship('User', back_populates='reset_tokens')
+    
+    @classmethod
+    def create_token(cls, user_id, expires_in_hours=1):
+        """パスワードリセット用のトークンを生成"""
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+        return cls(
+            user_id=user_id,
+            token=token,
+            expires_at=expires_at
+        )
+    
+    def is_valid(self):
+        """トークンが有効かチェック"""
+        return not self.used and datetime.utcnow() < self.expires_at
