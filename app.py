@@ -59,7 +59,7 @@ def get_user_id():
 limiter = Limiter(
     app=app,
     key_func=get_user_id,  # IPアドレスではなくユーザーIDを使用
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["1000 per day", "100 per hour"],
     storage_uri=REDIS_URL,
     swallow_errors=True,
 )
@@ -145,7 +145,7 @@ def register():
 
 # --- ルート: ログイン ---
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("10 per hour")  # 1時間に10回まで
+@limiter.limit("20 per hour")  # 1時間に10回まで
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -624,7 +624,7 @@ def change_password():
 
 # パスワードリセットリクエスト
 @app.route('/reset-password', methods=['GET', 'POST'])
-@limiter.limit("3 per hour")  # 悪用防止のため厳しい制限
+@limiter.limit("10 per hour")  # 悪用防止のため厳しい制限
 def reset_password_request():
     """パスワードリセットのリクエストページ"""
     if current_user.is_authenticated:
