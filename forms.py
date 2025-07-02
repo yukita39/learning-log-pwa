@@ -149,3 +149,19 @@ class ChangePasswordForm(FlaskForm):
         """現在のパスワードと同じでないことを確認"""
         if self.current_password.data == field.data:
             raise ValidationError('新しいパスワードは現在のパスワードと異なるものにしてください。')
+
+class ResetPasswordForm(FlaskForm):
+    """パスワードリセットフォーム"""
+    password = PasswordField('新しいパスワード', validators=[
+        DataRequired(message='パスワードを入力してください'),
+        Length(min=8, max=128, message='パスワードは8文字以上128文字以下で入力してください'),
+        password_complexity,
+        common_password_check
+    ])
+    
+    password_confirm = PasswordField('新しいパスワード（確認）', validators=[
+        DataRequired(message='確認用パスワードを入力してください'),
+        EqualTo('password', message='パスワードが一致しません')
+    ])
+    
+    submit = SubmitField('パスワードをリセット')

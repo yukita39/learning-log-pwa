@@ -7,6 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from collections import defaultdict
 import json
 import redis
+from email_utils import send_password_reset_email
+from db import PasswordHistory, PasswordResetToken
 
 # Flask-Limiter のインポート
 from flask_limiter import Limiter
@@ -600,6 +602,166 @@ def change_password():
             session.close()
     
     return render_template('change_password.html', form=form)
+
+# パスワード変更時に履歴を保存するように修正
+@app.route('/settings/password', methods=['GET', 'POST'])
+@login_required
+@limiter.limit("10 per hour")
+def change_password():
+    """パスワード変更ページ（履歴チェック付き）"""
+    from forms import ChangePasswordForm
+    form = ChangePasswordForm()
+    
+    if form.validate_on_submit():
+        session = Session()
+        try:
+            # 現在のユーザーを取得
+            user = session.query(User).get(current_user.id)
+            
+            # 現在のパスワードが正しいか確認
+            if not user.check_password(form.current_password.data):
+                flash('現在のパスワードが正しくありません', 'danger')
+                return redirect(url_for('change_password'))
+            
+            # 新しいパスワードが過去5回のパスワードと同じでないかチェック
+            if user.check_password_history(form.new_password.data, history_count=5):
+                flash('このパスワードは最近使用されています。別のパスワードを選んでください。', 'danger')
+                return redirect(url_for('change_password'))
+            
+            # 現在のパスワードを履歴に保存
+            password_history = PasswordHistory(
+                user_id=user.id,
+                password_hash=user.password_hash
+            )
+            session.add(password_history)
+            
+            # 新しいパスワードを設定
+            user.set_password(form.new_password.data)
+            session.commit()
+            
+            # パスワード変更の通知
+            flash('パスワードが正常に変更されました', 'success')
+            
+            # セキュリティのため、再ログインを促す
+            logout_user()
+            flash('セキュリティのため、新しいパスワードで再度ログインしてください', 'info')
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            session.rollback()
+            flash('パスワードの変更中にエラーが発生しました', 'danger')
+            print(f"パスワード変更エラー: {e}")
+        finally:
+            session.close()
+    
+    return render_template('change_password.html', form=form)
+
+# パスワードリセットリクエスト
+@app.route('/reset-password', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")  # 悪用防止のため厳しい制限
+def reset_password_request():
+    """パスワードリセットのリクエストページ"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        
+        if not email:
+            flash('メールアドレスを入力してください', 'danger')
+            return redirect(url_for('reset_password_request'))
+        
+        session = Session()
+        try:
+            user = session.query(User).filter_by(email=email).first()
+            
+            # ユーザーが存在してもしなくても同じメッセージを表示（セキュリティ対策）
+            if user:
+                # トークンを生成
+                token = PasswordResetToken.create_token(user.id)
+                session.add(token)
+                session.commit()
+                
+                # リセットURLを生成
+                reset_url = url_for('reset_password', token=token.token, _external=True)
+                
+                # メールを送信
+                if send_password_reset_email(user.email, reset_url):
+                    print(f"パスワードリセットメール送信成功: {user.email}")
+                else:
+                    print(f"パスワードリセットメール送信失敗: {user.email}")
+            
+            flash('入力されたメールアドレスが登録されている場合、パスワードリセットの手順をメールでお送りしました。', 'info')
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            session.rollback()
+            print(f"パスワードリセットリクエストエラー: {e}")
+            flash('エラーが発生しました。しばらく待ってから再度お試しください。', 'danger')
+        finally:
+            session.close()
+    
+    return render_template('reset_password_request.html')
+
+# パスワードリセット実行
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """パスワードリセット実行ページ"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    session = Session()
+    try:
+        # トークンを確認
+        reset_token = session.query(PasswordResetToken).filter_by(token=token).first()
+        
+        if not reset_token or not reset_token.is_valid():
+            flash('無効または期限切れのリンクです。', 'danger')
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            from forms import ResetPasswordForm
+            form = ResetPasswordForm()
+            
+            if form.validate_on_submit():
+                user = reset_token.user
+                
+                # 新しいパスワードが過去のパスワードと同じでないかチェック
+                if user.check_password_history(form.password.data, history_count=5):
+                    flash('このパスワードは最近使用されています。別のパスワードを選んでください。', 'danger')
+                    return render_template('reset_password.html', form=form, token=token)
+                
+                # 現在のパスワードを履歴に保存（存在する場合）
+                if user.password_hash:
+                    password_history = PasswordHistory(
+                        user_id=user.id,
+                        password_hash=user.password_hash
+                    )
+                    session.add(password_history)
+                
+                # 新しいパスワードを設定
+                user.set_password(form.password.data)
+                
+                # トークンを使用済みにする
+                reset_token.used = True
+                
+                session.commit()
+                
+                flash('パスワードがリセットされました。新しいパスワードでログインしてください。', 'success')
+                return redirect(url_for('login'))
+        else:
+            from forms import ResetPasswordForm
+            form = ResetPasswordForm()
+        
+        return render_template('reset_password.html', form=form, token=token)
+        
+    except Exception as e:
+        session.rollback()
+        print(f"パスワードリセットエラー: {e}")
+        flash('エラーが発生しました。', 'danger')
+        return redirect(url_for('login'))
+    finally:
+        session.close()
 
 # result ページ（オプション）
 @app.route('/result')
