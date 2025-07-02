@@ -126,7 +126,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField('ログイン')
 
 class ChangePasswordForm(FlaskForm):
-    """パスワード変更フォーム（将来の実装用）"""
+    '''パスワード変更フォーム'''
     current_password = PasswordField('現在のパスワード', validators=[
         DataRequired(message='現在のパスワードを入力してください')
     ])
@@ -159,7 +159,8 @@ class ResetPasswordForm(FlaskForm):
         common_password_check
     ])
     
-    password_confirm = PasswordField('新しいパスワード（確認）', validators=[
+    # ここを password_confirm から confirm_password に変更
+    confirm_password = PasswordField('新しいパスワード（確認）', validators=[
         DataRequired(message='確認用パスワードを入力してください'),
         EqualTo('password', message='パスワードが一致しません')
     ])
