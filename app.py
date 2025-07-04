@@ -22,6 +22,23 @@ from google_calendar import add_event
 # forms.py が存在する場合はインポート（後で作成予定）
 from forms import RegistrationForm, LoginForm
 
+# 日本時間のタイムゾーンを設定
+JST = pytz.timezone('Asia/Tokyo')
+
+# 現在時刻を日本時間で取得する関数
+def get_jst_now():
+    """現在時刻を日本時間で取得"""
+    return datetime.now(JST)
+
+# UTCから日本時間に変換する関数
+def utc_to_jst(utc_dt):
+    """UTC時刻を日本時間に変換"""
+    if utc_dt is None:
+        return None
+    if utc_dt.tzinfo is None:
+        utc_dt = pytz.UTC.localize(utc_dt)
+    return utc_dt.astimezone(JST)
+
 app = Flask(__name__)
 # SECRET_KEYが設定されていない場合はエラー
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -146,8 +163,7 @@ def register():
 
 # --- ルート: ログイン ---
 
-# app.py のログイン処理を以下に置き換え
-
+# ログイン処理を日本時間対応に修正
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("20 per hour")
 def login():
@@ -167,12 +183,13 @@ def login():
                 
                 # ログイン成功時の処理
                 try:
-                    # last_login を更新（カラムが存在する場合のみ）
+                    # last_login を日本時間で更新
                     if hasattr(user, 'last_login'):
-                        user.last_login = datetime.utcnow()
-                        print(f"最終ログイン時刻を更新: {user.email} - {user.last_login}")
+                        # タイムゾーン情報なしで保存（データベースはUTCとして扱う）
+                        user.last_login = get_jst_now().replace(tzinfo=None)
+                        print(f"最終ログイン時刻を更新: {user.email} - {user.last_login} (JST)")
                     
-                    # ログイン失敗回数をリセット（カラムが存在する場合のみ）
+                    # ログイン失敗回数をリセット
                     if hasattr(user, 'reset_failed_attempts'):
                         user.reset_failed_attempts()
                     
@@ -180,7 +197,6 @@ def login():
                 except Exception as e:
                     print(f"ログイン情報更新エラー: {e}")
                     session.rollback()
-                    # エラーが発生してもログインは続行
                 
                 # Flask-Loginでログイン
                 login_user(user, remember=form.remember.data)
@@ -526,7 +542,7 @@ def api_dashboard():
     finally:
         session.close()
 
-# app.py の settings ルートも改善
+#settingsルート
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -772,17 +788,16 @@ def account():
     with Session() as db_session:
         user = db_session.query(User).get(current_user.id)
         
-        # user_data辞書を作成（エラー回避のため）
+        # user_data辞書を作成（日本時間で表示）
         user_data = {
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'created_at': getattr(user, 'created_at', None),
-            'last_login': getattr(user, 'last_login', None),
+            'created_at': user.created_at,  # そのまま（既に日本時間の可能性）
+            'last_login': user.last_login,  # そのまま（日本時間で保存されている）
             'calendar_id': getattr(user, 'calendar_id', None)
         }
         
-        # 両方渡す（後方互換性のため）
         return render_template('account.html', 
                              user=user,
                              user_data=user_data)

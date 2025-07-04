@@ -9,6 +9,13 @@ from datetime import datetime, timedelta
 import secrets
 import os
 from dotenv import load_dotenv
+import pytz
+
+# 日本時間を返す関数
+def get_jst_now():
+    """現在時刻を日本時間で取得（タイムゾーン情報なし）"""
+    jst = pytz.timezone('Asia/Tokyo')
+    return datetime.now(jst).replace(tzinfo=None)
 
 # .envファイルを読み込み（ローカル開発用）
 load_dotenv()
@@ -47,7 +54,7 @@ class PasswordHistory(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     password_hash = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_jst_now)  # 日本時間
     
     # リレーション（back_populatesは後で設定）
 
@@ -57,7 +64,7 @@ class PasswordResetToken(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     token = Column(String(100), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_jst_now)  # 日本時間
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
     
@@ -66,17 +73,21 @@ class PasswordResetToken(Base):
     @classmethod
     def create_token(cls, user_id, expires_in_hours=1):
         """パスワードリセット用のトークンを生成"""
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+        jst = pytz.timezone('Asia/Tokyo')
+        now_jst = datetime.now(jst).replace(tzinfo=None)
+        expires_at = now_jst + timedelta(hours=expires_in_hours)
+        
         return cls(
             user_id=user_id,
-            token=token,
+            token=secrets.token_urlsafe(32),
             expires_at=expires_at
         )
     
     def is_valid(self):
         """トークンが有効かチェック"""
-        return not self.used and datetime.utcnow() < self.expires_at
+        jst = pytz.timezone('Asia/Tokyo')
+        now_jst = datetime.now(jst).replace(tzinfo=None)
+        return not self.used and now_jst < self.expires_at
 
 class User(Base, UserMixin):
     __tablename__ = "users"
@@ -85,7 +96,7 @@ class User(Base, UserMixin):
     email = Column(String(120), unique=True, nullable=False)
     username = Column(String(80), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_jst_now)
     is_active = Column(Boolean, default=True)
     calendar_id = Column(String(255), nullable=True)
     
