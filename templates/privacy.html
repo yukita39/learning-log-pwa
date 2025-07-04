@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}プライバシーポリシー - 作業ログ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="h3 mb-4">プライバシーポリシー</h1>
+                    
+                    <p class="text-muted">最終更新日: 2025年1月4日</p>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">はじめに</h2>
+                        <p>本サービス（以下「当サービス」といいます。）は、ユーザーの個人情報保護を重要視し、以下のプライバシーポリシーに基づき個人情報を取り扱います。</p>
+                    </section>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">1. 収集する情報</h2>
+                        <p>当サービスは、利用者から以下の情報を収集します：</p>
+                        <ul>
+                            <li><strong>アカウント情報</strong>：ユーザー名、メールアドレス、パスワード（暗号化して保存）</li>
+                            <li><strong>作業ログデータ</strong>：作業日時、作業内容、所要時間、感想、タグ</li>
+                            <li><strong>利用状況データ</strong>：ログイン日時、IPアドレス（レート制限のため）</li>
+                            <li><strong>Googleカレンダー連携情報</strong>：カレンダーID（任意）</li>
+                        </ul>
+                    </section>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">2. 情報の利用目的</h2>
+                        <p>収集した情報は以下の目的で利用します：</p>
+                        <ol>
+                            <li>サービスの提供・運営のため</li>
+                            <li>ユーザーの本人確認のため</li>
+                            <li>ユーザーへの通知や連絡のため</li>
+                            <li>サービスの改善・新機能開発のため</li>
+                            <li>利用規約に違反したユーザーへの対応のため</li>
+                            <li>セキュリティ向上のため</li>
+                        </ol>
+                    </section>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">3. 第三者への提供</h2>
+                        <p>当サービスは、以下の場合を除いて、ユーザーの個人情報を第三者に提供することはありません：</p>
+                        <ul>
+                            <li>ユーザーの同意がある場合</li>
+                            <li>法令に基づく場合</li>
+                            <li>人の生命、身体または財産の保護のために必要がある場合</li>
+                            <li>公衆衛生の向上または児童の健全な育成の推進のために特に必要がある場合</li>
+                            <li>国の機関もしくは地方公共団体またはその委託を受けた者が法令の定める事務を遂行することに対して協力する必要がある場合</li>
+                        </ul>
+                    </section>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">4. データの保存と削除</h2>
+                        <ul>
+                            <li>ユーザーデータは、サービス提供に必要な期間保存されます</li>
+                            <li>アカウント削除時、関連するすべての個人データも削除されます</li>
+                            <li>ただし、法的要求がある場合は、一定期間保存することがあります</li>
+                        </ul>
+                    </section>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">5. セキュリティ</h2>
+                        <p>当サービスは、個人情報の紛失、破壊、改ざん、不正アクセスから保護するため、以下のセキュリティ対策を実施しています：</p>
+                        <ul>
+                            <li>パスワードの暗号化（bcrypt使用）</li>
+                            <li>HTTPS通信の使用</li>
+                            <li>レート制限によるブルートフォース攻撃の防止</li>
+                            <li>セッション管理の適切な実装</li>
+                        </ul>
+                    </section>
+                    
+                    <section class="mb-4">
+                        <h2 class="h5">6. Cookie

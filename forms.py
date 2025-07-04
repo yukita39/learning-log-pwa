@@ -72,27 +72,26 @@ def common_password_check(form, field):
 
 class RegistrationForm(FlaskForm):
     """ユーザー登録フォーム（強化版）"""
+    username = StringField('ユーザー名', validators=[
+        DataRequired(message='ユーザー名は必須です'),
+        Length(min=3, max=20, message='ユーザー名は3文字以上20文字以下で入力してください')
+    ])
     email = StringField('メールアドレス', validators=[
-        DataRequired(message='メールアドレスを入力してください'),
+        DataRequired(message='メールアドレスは必須です'),
         Email(message='有効なメールアドレスを入力してください')
     ])
-    
-    username = StringField('ユーザー名', validators=[
-        DataRequired(message='ユーザー名を入力してください'),
-        Length(min=3, max=20, message='ユーザー名は3文字以上20文字以下で入力してください'),
-        Regexp('^[A-Za-z0-9_]+$', message='ユーザー名は英数字とアンダースコアのみ使用できます')
-    ])
-    
     password = PasswordField('パスワード', validators=[
-        DataRequired(message='パスワードを入力してください'),
-        Length(min=8, max=128, message='パスワードは8文字以上128文字以下で入力してください'),
-        password_complexity,  # カスタムバリデーター
-        common_password_check  # 脆弱パスワードチェック
+        DataRequired(message='パスワードは必須です'),
+        Length(min=8, message='パスワードは8文字以上で入力してください')
+    ])
+    password_confirm = PasswordField('パスワード（確認）', validators=[
+        DataRequired(message='パスワードの確認は必須です'),
+        EqualTo('password', message='パスワードが一致しません')
     ])
     
-    password_confirm = PasswordField('パスワード（確認）', validators=[
-        DataRequired(message='確認用パスワードを入力してください'),
-        EqualTo('password', message='パスワードが一致しません')
+    # 利用規約同意チェックボックスを追加
+    agree_terms = BooleanField('利用規約とプライバシーポリシーに同意します', validators=[
+        DataRequired(message='利用規約への同意が必要です')
     ])
     
     submit = SubmitField('登録')

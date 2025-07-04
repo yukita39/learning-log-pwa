@@ -161,6 +161,24 @@
                                 <div id="password-match-feedback"></div>
                             </div>
                             
+                            <!-- 利用規約同意チェックボックス -->
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.agree_terms(class="form-check-input", id="agree_terms") }}
+                                    <label class="form-check-label" for="agree_terms">
+                                        <a href="{{ url_for('terms') }}" target="_blank" class="text-decoration-none">利用規約</a>および
+                                        <a href="{{ url_for('privacy') }}" target="_blank" class="text-decoration-none">プライバシーポリシー</a>に同意します
+                                    </label>
+                                    {% if form.agree_terms.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.agree_terms.errors %}
+                                                <span>{{ error }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
                             <div class="d-grid">
                                 {{ form.submit(class="btn btn-primary") }}
                             </div>

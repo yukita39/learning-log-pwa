@@ -807,6 +807,16 @@ def delete_account():
         return render_template('delete_account.html')
     finally:
         db_session.close()
+
+# 利用規約ページ
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+# プライバシーポリシーページ
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
     
 # result ページ（オプション）
 @app.route('/result')

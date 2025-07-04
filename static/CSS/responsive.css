@@ -1,0 +1,117 @@
+/* static/css/responsive.css */
+
+/* モバイルファースト設計 */
+
+/* 基本スタイル（モバイル向け） */
+@media (max-width: 576px) {
+    /* ナビゲーションバー調整 */
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    /* フォーム要素 */
+    .form-control, .btn {
+        font-size: 16px; /* iOS のズーム防止 */
+    }
+    
+    /* カード内の余白調整 */
+    .card {
+        padding: 1rem !important;
+    }
+    
+    /* ボタングループ */
+    .d-flex.gap-2 {
+        flex-wrap: wrap;
+    }
+    
+    .d-flex.gap-2 .btn {
+        flex: 1 1 45%;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* テーブルのレスポンシブ対応 */
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    
+    /* 統計カード */
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    /* ダッシュボードのグラフ */
+    .chart-container {
+        position: relative;
+        height: 250px !important;
+    }
+    
+    /* アカウント設定の情報行 */
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .info-label {
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* タブレット向け */
+@media (min-width: 577px) and (max-width: 768px) {
+    /* ボタングループ */
+    .d-flex.gap-2 .btn {
+        flex: 1 1 auto;
+    }
+    
+    /* グリッドレイアウト調整 */
+    .row > [class*="col-"] {
+        margin-bottom: 1rem;
+    }
+}
+
+/* デスクトップ向け */
+@media (min-width: 769px) {
+    /* コンテナの最大幅 */
+    .container {
+        max-width: 1200px;
+    }
+    
+    /* カードのホバーエフェクト */
+    .card:hover {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: box-shadow 0.3s ease;
+    }
+}
+
+/* 共通のレスポンシブ対応 */
+
+/* スクロール可能なテーブル */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* タッチデバイス向けのボタンサイズ */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .nav-link {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* 横向き表示の対応 */
+@media (orientation: landscape) and (max-height: 500px) {
+    .navbar {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+    
+    main {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+}

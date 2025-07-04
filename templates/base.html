@@ -38,6 +38,10 @@
             font-weight: bold;
         }
     </style>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -164,4 +168,20 @@
     
     {% block extra_js %}{% endblock %}
 </body>
+<!-- フッター -->
+<footer class="bg-light py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                <small class="text-muted">&copy; 2025 作業ログ. All rights reserved.</small>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <small>
+                    <a href="{{ url_for('terms') }}" class="text-muted text-decoration-none me-3">利用規約</a>
+                    <a href="{{ url_for('privacy') }}" class="text-muted text-decoration-none">プライバシーポリシー</a>
+                </small>
+            </div>
+        </div>
+    </div>
+</footer>
 </html>
