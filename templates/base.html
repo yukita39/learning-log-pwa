@@ -42,27 +42,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">📘 作業ログ</a>
-            
-            {% if 'user_id' in session %}
-            <div class="navbar-nav ms-auto">
-                <span class="navbar-text me-3 text-white">
-                    👤 {{ session.username }}
-                </span>
-                <a class="nav-link" href="{{ url_for('account') }}">⚙️ アカウント設定</a>
-                <a class="nav-link" href="{{ url_for('logout') }}">ログアウト</a>
-            </div>
-            {% else %}
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('login') }}">ログイン</a>
-                <a class="nav-link" href="{{ url_for('register') }}">新規登録</a>
-            </div>
-            {% endif %}
-        </div>
-    </nav>
-    <!-- ナビゲーションバー -->
+    <!-- ナビゲーションバー（統合版） -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
@@ -106,9 +86,20 @@
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> {{ current_user.email }}
+                                <i class="fas fa-user"></i> {{ current_user.username }}
                             </a>
                             <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('account') }}">
+                                        <i class="fas fa-user-cog"></i> アカウント設定
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('change_password') }}">
+                                        <i class="fas fa-key"></i> パスワード変更
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('logout') }}">
                                         <i class="fas fa-sign-out-alt"></i> ログアウト
