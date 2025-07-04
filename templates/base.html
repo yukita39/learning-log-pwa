@@ -42,6 +42,26 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">📘 作業ログ</a>
+            
+            {% if 'user_id' in session %}
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3 text-white">
+                    👤 {{ session.username }}
+                </span>
+                <a class="nav-link" href="{{ url_for('account') }}">⚙️ アカウント設定</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">ログアウト</a>
+            </div>
+            {% else %}
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('login') }}">ログイン</a>
+                <a class="nav-link" href="{{ url_for('register') }}">新規登録</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
     <!-- ナビゲーションバー -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
