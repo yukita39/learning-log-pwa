@@ -745,7 +745,8 @@ def delete_account():
         return render_template('delete_account.html')
     
     # POSTの場合は削除処理
-    with Session() as db_session:  # SQLAlchemyのSessionを使用
+    db_session = Session()
+    try:
         user = db_session.query(User).get(current_user.id)
         password = request.form.get('password')
         confirm_text = request.form.get('confirm_text')
@@ -760,28 +761,52 @@ def delete_account():
             flash('確認テキストが正しくありません', 'error')
             return render_template('delete_account.html')
         
-        try:
-            # ユーザー名を保存（削除後のメッセージ用）
-            username = user.username
-            
-            # アカウント削除のログを記録
-            app.logger.info(f"ユーザー '{username}' (ID: {user.id}) がアカウントを削除しました")
-            
-            # ユーザーとその関連データを削除（カスケード削除）
+        # ユーザー名とIDを保存（削除後のメッセージ用）
+        username = user.username
+        user_id = user.id
+        
+        # Flask-Loginのログアウト処理を先に実行
+        logout_user()
+        
+        # 関連データを明示的に削除（順序が重要）
+        # 1. ログを削除
+        deleted_logs = db_session.query(Log).filter_by(user_id=user_id).delete(synchronize_session=False)
+        print(f"削除されたログ数: {deleted_logs}")
+        
+        # 2. パスワード履歴を削除
+        deleted_history = db_session.query(PasswordHistory).filter_by(user_id=user_id).delete(synchronize_session=False)
+        print(f"削除されたパスワード履歴数: {deleted_history}")
+        
+        # 3. パスワードリセットトークンを削除
+        deleted_tokens = db_session.query(PasswordResetToken).filter_by(user_id=user_id).delete(synchronize_session=False)
+        print(f"削除されたトークン数: {deleted_tokens}")
+        
+        # 変更をコミット
+        db_session.commit()
+        
+        # セッションを一度閉じて新しく開く
+        db_session.close()
+        db_session = Session()
+        
+        # ユーザーを再取得して削除
+        user = db_session.query(User).get(user_id)
+        if user:
             db_session.delete(user)
             db_session.commit()
-            
-            # Flask-Loginのログアウト処理
-            logout_user()
-            
-            flash(f'アカウント「{username}」を削除しました。ご利用ありがとうございました。', 'success')
-            return redirect(url_for('index'))
-            
-        except Exception as e:
-            db_session.rollback()
-            app.logger.error(f"アカウント削除エラー: {str(e)}")
-            flash('アカウントの削除中にエラーが発生しました', 'error')
-            return render_template('delete_account.html')
+            print(f"ユーザー '{username}' (ID: {user_id}) を削除しました")
+        
+        flash(f'アカウント「{username}」を削除しました。ご利用ありがとうございました。', 'success')
+        return redirect(url_for('login'))  # indexではなくloginにリダイレクト
+        
+    except Exception as e:
+        db_session.rollback()
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"アカウント削除エラー詳細:\n{error_detail}")
+        flash('アカウントの削除中にエラーが発生しました', 'error')
+        return render_template('delete_account.html')
+    finally:
+        db_session.close()
     
 # result ページ（オプション）
 @app.route('/result')
