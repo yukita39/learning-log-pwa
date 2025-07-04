@@ -745,17 +745,20 @@ def account():
     with Session() as db_session:
         user = db_session.query(User).get(current_user.id)
         
-        # 最終ログイン時刻を日本時間に変換
-        last_login_jst = None
-        if user.last_login:
-            # UTCから日本時間（JST）に変換
-            jst = pytz.timezone('Asia/Tokyo')
-            last_login_utc = user.last_login.replace(tzinfo=pytz.UTC)
-            last_login_jst = last_login_utc.astimezone(jst)
+        # user_data辞書を作成（エラー回避のため）
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'created_at': getattr(user, 'created_at', None),
+            'last_login': getattr(user, 'last_login', None),
+            'calendar_id': getattr(user, 'calendar_id', None)
+        }
         
+        # 両方渡す（後方互換性のため）
         return render_template('account.html', 
-                             user=user, 
-                             last_login_jst=last_login_jst)
+                             user=user,
+                             user_data=user_data)
 
 # アカウント削除（退会）確認ページ（修正版）
 @app.route('/delete_account', methods=['GET', 'POST'])
@@ -914,7 +917,7 @@ def ensure_columns_exist():
 with app.app_context():
     Base.metadata.create_all(engine)
     ensure_columns_exist()  # カラムの存在確認と追加
-    
+
 if __name__ == '__main__':
     # テーブルが存在しない場合は作成
     Base.metadata.create_all(engine)
