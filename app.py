@@ -145,7 +145,8 @@ def register():
     return render_template("register.html", form=form)
 
 # --- ルート: ログイン ---
-# app.py のログイン処理を以下のように修正
+
+# app.py のログイン処理を以下に置き換え
 
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("20 per hour")
@@ -159,9 +160,27 @@ def login():
         with Session() as session:
             user = session.query(User).filter_by(email=form.email.data).first()
             if user and user.check_password(form.password.data):
-                # 最終ログイン時刻を更新
-                user.last_login = datetime.utcnow()
-                session.commit()
+                # アカウントロックをチェック
+                if hasattr(user, 'is_locked') and user.is_locked():
+                    flash('アカウントがロックされています。しばらくお待ちください。', 'danger')
+                    return render_template('login.html', form=form)
+                
+                # ログイン成功時の処理
+                try:
+                    # last_login を更新（カラムが存在する場合のみ）
+                    if hasattr(user, 'last_login'):
+                        user.last_login = datetime.utcnow()
+                        print(f"最終ログイン時刻を更新: {user.email} - {user.last_login}")
+                    
+                    # ログイン失敗回数をリセット（カラムが存在する場合のみ）
+                    if hasattr(user, 'reset_failed_attempts'):
+                        user.reset_failed_attempts()
+                    
+                    session.commit()
+                except Exception as e:
+                    print(f"ログイン情報更新エラー: {e}")
+                    session.rollback()
+                    # エラーが発生してもログインは続行
                 
                 # Flask-Loginでログイン
                 login_user(user, remember=form.remember.data)
@@ -169,6 +188,14 @@ def login():
                 next_page = request.args.get('next')
                 return redirect(next_page) if next_page else redirect(url_for('index'))
             else:
+                # ログイン失敗時の処理
+                if user and hasattr(user, 'increment_failed_attempts'):
+                    try:
+                        user.increment_failed_attempts()
+                        session.commit()
+                    except:
+                        session.rollback()
+                
                 flash('メールアドレスまたはパスワードが正しくありません', 'danger')
     
     return render_template('login.html', form=form)
