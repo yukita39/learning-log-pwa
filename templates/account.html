@@ -135,23 +135,27 @@
             <h2>📋 アカウント情報</h2>
             <div class="info-row">
                 <span class="info-label">ユーザー名:</span>
-                <span class="info-value">{{ user.username }}</span>
+                <span class="info-value">{{ user_data.username or 'N/A' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">メールアドレス:</span>
-                <span class="info-value">{{ user.email }}</span>
+                <span class="info-value">{{ user_data.email or 'N/A' }}</span>
             </div>
             <div class="info-row">
                 <span class="info-label">登録日:</span>
-                <span class="info-value">{{ user.created_at.strftime('%Y年%m月%d日 %H:%M') if user.created_at else 'N/A' }}</span>
+                <span class="info-value">
+                    {% if user_data.created_at %}
+                        {{ user_data.created_at.strftime('%Y年%m月%d日 %H:%M') }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </span>
             </div>
-            <!-- account.html の最終ログイン表示部分を以下のように修正 -->
-
             <div class="info-row">
                 <span class="info-label">最終ログイン:</span>
                 <span class="info-value">
-                    {% if user.last_login %}
-                        {{ user.last_login.strftime('%Y年%m月%d日 %H:%M') }} (UTC)
+                    {% if user_data.last_login %}
+                        {{ user_data.last_login.strftime('%Y年%m月%d日 %H:%M') }} (UTC)
                     {% else %}
                         未ログイン
                     {% endif %}

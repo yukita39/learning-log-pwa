@@ -40,6 +40,44 @@ engine = create_engine(
 Session = sessionmaker(bind=engine, expire_on_commit=False)
 Base = declarative_base()
 
+# PasswordHistoryとPasswordResetTokenをUserクラスより前に定義
+class PasswordHistory(Base):
+    __tablename__ = 'password_history'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # リレーション（back_populatesは後で設定）
+
+class PasswordResetToken(Base):
+    __tablename__ = 'password_reset_tokens'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    token = Column(String(100), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    
+    # リレーション（back_populatesは後で設定）
+    
+    @classmethod
+    def create_token(cls, user_id, expires_in_hours=1):
+        """パスワードリセット用のトークンを生成"""
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+        return cls(
+            user_id=user_id,
+            token=token,
+            expires_at=expires_at
+        )
+    
+    def is_valid(self):
+        """トークンが有効かチェック"""
+        return not self.used and datetime.utcnow() < self.expires_at
+
 class User(Base, UserMixin):
     __tablename__ = "users"
 
@@ -50,21 +88,24 @@ class User(Base, UserMixin):
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
     calendar_id = Column(String(255), nullable=True)
+    
+    # 追加フィールド
+    last_login = Column(DateTime, nullable=True)
+    failed_login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime, nullable=True)
+    is_admin = Column(Boolean, default=False)
 
     # リレーション
-    logs = relationship('Log', back_populates='user', lazy='dynamic')
-    password_history = relationship('PasswordHistory', back_populates='user', order_by='PasswordHistory.created_at.desc()')
-    reset_tokens = relationship('PasswordResetToken', back_populates='user')
+    logs = relationship('Log', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
+    password_history = relationship('PasswordHistory', back_populates='user', 
+                                  order_by='PasswordHistory.created_at.desc()', 
+                                  cascade='all, delete-orphan')
+    reset_tokens = relationship('PasswordResetToken', back_populates='user', 
+                              cascade='all, delete-orphan')
     
     def set_password(self, password):
-        """パスワードを設定（履歴も保存）"""
-        # 新しいパスワードのハッシュを生成
-        new_hash = generate_password_hash(password)
-        
-        # パスワード履歴に追加（セッション内で行う）
-        # 注: この関数を呼ぶときは必ずセッション内で実行すること
-        
-        self.password_hash = new_hash
+        """パスワードを設定"""
+        self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -81,7 +122,24 @@ class User(Base, UserMixin):
                 return True
         
         return False
-
+    
+    def is_locked(self):
+        """アカウントがロックされているかチェック"""
+        if self.locked_until:
+            return datetime.utcnow() < self.locked_until
+        return False
+    
+    def increment_failed_attempts(self):
+        """ログイン失敗回数を増加"""
+        self.failed_login_attempts += 1
+        # 5回失敗したら30分間ロック
+        if self.failed_login_attempts >= 5:
+            self.locked_until = datetime.utcnow() + timedelta(minutes=30)
+    
+    def reset_failed_attempts(self):
+        """ログイン成功時に失敗回数をリセット"""
+        self.failed_login_attempts = 0
+        self.locked_until = None
 
 class Log(Base):
     __tablename__ = "logs"
@@ -94,12 +152,15 @@ class Log(Base):
     impression = Column(Text)
     tags = Column(Text, default="")
 
-    # どのユーザーのログかを紐づける外部キー
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # 外部キーにondelete='CASCADE'を追加
+    user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
 
-    # 逆引き
+    # リレーション
     user = relationship("User", back_populates="logs")
 
+# リレーションのback_populatesを設定
+PasswordHistory.user = relationship('User', back_populates='password_history')
+PasswordResetToken.user = relationship('User', back_populates='reset_tokens')
 
 # 開発用: 直接実行してテーブルを生成
 if __name__ == "__main__":
@@ -122,44 +183,3 @@ if __name__ == "__main__":
     print("\nCreating tables...")
     Base.metadata.create_all(engine)
     print("Tables created successfully!")
-
-# パスワード履歴を保存するテーブル
-class PasswordHistory(Base):
-    __tablename__ = 'password_history'
-    
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    # リレーション
-    user = relationship('User', back_populates='password_history')
-
-# パスワードリセットトークンを保存するテーブル
-class PasswordResetToken(Base):
-    __tablename__ = 'password_reset_tokens'
-    
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    token = Column(String(100), unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False)
-    used = Column(Boolean, default=False)
-    
-    # リレーション
-    user = relationship('User', back_populates='reset_tokens')
-    
-    @classmethod
-    def create_token(cls, user_id, expires_in_hours=1):
-        """パスワードリセット用のトークンを生成"""
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
-        return cls(
-            user_id=user_id,
-            token=token,
-            expires_at=expires_at
-        )
-    
-    def is_valid(self):
-        """トークンが有効かチェック"""
-        return not self.used and datetime.utcnow() < self.expires_at

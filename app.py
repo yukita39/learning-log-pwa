@@ -862,6 +862,59 @@ def result():
     finally:
         session.close()
 
+def ensure_columns_exist():
+    """必要なカラムが存在しない場合は追加する"""
+    from sqlalchemy import text, inspect
+    
+    inspector = inspect(engine)
+    
+    # usersテーブルのカラムを取得
+    try:
+        columns = [col['name'] for col in inspector.get_columns('users')]
+    except:
+        # テーブルが存在しない場合は作成
+        Base.metadata.create_all(engine)
+        return
+    
+    # 追加が必要なカラム
+    columns_to_add = []
+    
+    if 'last_login' not in columns:
+        if 'postgresql' in str(engine.url):
+            columns_to_add.append(('last_login', 'TIMESTAMP'))
+        else:
+            columns_to_add.append(('last_login', 'DATETIME'))
+    
+    if 'failed_login_attempts' not in columns:
+        columns_to_add.append(('failed_login_attempts', 'INTEGER DEFAULT 0'))
+    
+    if 'locked_until' not in columns:
+        if 'postgresql' in str(engine.url):
+            columns_to_add.append(('locked_until', 'TIMESTAMP'))
+        else:
+            columns_to_add.append(('locked_until', 'DATETIME'))
+    
+    if 'is_admin' not in columns:
+        columns_to_add.append(('is_admin', 'BOOLEAN DEFAULT FALSE'))
+    
+    # カラムを追加
+    if columns_to_add:
+        with engine.connect() as conn:
+            for column_name, column_type in columns_to_add:
+                try:
+                    query = f"ALTER TABLE users ADD COLUMN {column_name} {column_type}"
+                    conn.execute(text(query))
+                    conn.commit()
+                    print(f"✅ カラム '{column_name}' を追加しました")
+                except Exception as e:
+                    # 既に存在する場合はスキップ
+                    print(f"ℹ️ カラム '{column_name}' のスキップ: {str(e)[:50]}")
+
+# アプリケーション起動時に実行
+with app.app_context():
+    Base.metadata.create_all(engine)
+    ensure_columns_exist()  # カラムの存在確認と追加
+    
 if __name__ == '__main__':
     # テーブルが存在しない場合は作成
     Base.metadata.create_all(engine)
