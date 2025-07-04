@@ -1,6 +1,6 @@
 # app.py
 import os
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,6 +9,7 @@ import json
 import redis
 from email_utils import send_password_reset_email
 from db import PasswordHistory, PasswordResetToken
+import pytz
 
 # Flask-Limiter のインポート
 from flask_limiter import Limiter
@@ -144,8 +145,10 @@ def register():
     return render_template("register.html", form=form)
 
 # --- ルート: ログイン ---
+# app.py のログイン処理を以下のように修正
+
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("20 per hour")  # 1時間に10回まで
+@limiter.limit("20 per hour")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -156,7 +159,13 @@ def login():
         with Session() as session:
             user = session.query(User).filter_by(email=form.email.data).first()
             if user and user.check_password(form.password.data):
+                # 最終ログイン時刻を更新
+                user.last_login = datetime.utcnow()
+                session.commit()
+                
+                # Flask-Loginでログイン
                 login_user(user, remember=form.remember.data)
+                
                 next_page = request.args.get('next')
                 return redirect(next_page) if next_page else redirect(url_for('index'))
             else:
@@ -729,13 +738,24 @@ def reset_password(token):
     finally:
         session.close()
 
-# アカウント設定ページ
+# アカウント設定ページ（日本時間対応版）
 @app.route('/account')
 @login_required
 def account():
-    with Session() as db_session:  # SQLAlchemyのSessionを使用
+    with Session() as db_session:
         user = db_session.query(User).get(current_user.id)
-        return render_template('account.html', user=user)
+        
+        # 最終ログイン時刻を日本時間に変換
+        last_login_jst = None
+        if user.last_login:
+            # UTCから日本時間（JST）に変換
+            jst = pytz.timezone('Asia/Tokyo')
+            last_login_utc = user.last_login.replace(tzinfo=pytz.UTC)
+            last_login_jst = last_login_utc.astimezone(jst)
+        
+        return render_template('account.html', 
+                             user=user, 
+                             last_login_jst=last_login_jst)
 
 # アカウント削除（退会）確認ページ（修正版）
 @app.route('/delete_account', methods=['GET', 'POST'])

@@ -145,9 +145,17 @@
                 <span class="info-label">登録日:</span>
                 <span class="info-value">{{ user.created_at.strftime('%Y年%m月%d日 %H:%M') if user.created_at else 'N/A' }}</span>
             </div>
+            <!-- account.html の最終ログイン表示部分を以下のように修正 -->
+
             <div class="info-row">
                 <span class="info-label">最終ログイン:</span>
-                <span class="info-value">{{ user.last_login.strftime('%Y年%m月%d日 %H:%M') if user.last_login else '未ログイン' }}</span>
+                <span class="info-value">
+                    {% if user.last_login %}
+                        {{ user.last_login.strftime('%Y年%m月%d日 %H:%M') }} (UTC)
+                    {% else %}
+                        未ログイン
+                    {% endif %}
+                </span>
             </div>
         </div>
         
