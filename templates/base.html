@@ -148,9 +148,19 @@
     </main>
 
     <!-- フッター -->
-    <footer class="bg-light py-3 mt-5">
-        <div class="container text-center text-muted">
-            <small>&copy; 2024 作業ログ. All rights reserved.</small>
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    <small class="text-muted">&copy; 2025 作業ログ. All rights reserved.</small>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <small>
+                        <a href="{{ url_for('terms') }}" class="text-muted text-decoration-none me-3">利用規約</a>
+                        <a href="{{ url_for('privacy') }}" class="text-muted text-decoration-none">プライバシーポリシー</a>
+                    </small>
+                </div>
+            </div>
         </div>
     </footer>
 
@@ -168,20 +178,4 @@
     
     {% block extra_js %}{% endblock %}
 </body>
-<!-- フッター -->
-<footer class="bg-light py-4 mt-5">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                <small class="text-muted">&copy; 2025 作業ログ. All rights reserved.</small>
-            </div>
-            <div class="col-md-6 text-center text-md-end">
-                <small>
-                    <a href="{{ url_for('terms') }}" class="text-muted text-decoration-none me-3">利用規約</a>
-                    <a href="{{ url_for('privacy') }}" class="text-muted text-decoration-none">プライバシーポリシー</a>
-                </small>
-            </div>
-        </div>
-    </div>
-</footer>
 </html>
